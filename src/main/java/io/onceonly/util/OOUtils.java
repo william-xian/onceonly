@@ -9,7 +9,7 @@ import java.util.UUID;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
-public final class DlsUtils {
+public final class OOUtils {
 
 	public static String encodeMD5(String str) {
 		try {

@@ -21,7 +21,7 @@ import io.onceonly.db.annotation.VColumn;
 import io.onceonly.db.annotation.VTable;
 import io.onceonly.exception.Failed;
 import io.onceonly.util.AnnotationScanner;
-import io.onceonly.util.DlsUtils;
+import io.onceonly.util.OOUtils;
 
 @Component
 @Order(1)
@@ -52,12 +52,12 @@ public class StartupRunner implements CommandLineRunner {
     			field.setAccessible(true);
     			try {
 					String name = field.get(null).toString();
-					String id ="msg/"+group.value()+"_"+DlsUtils.encodeMD5(name);
+					String id ="msg/"+group.value()+"_"+OOUtils.encodeMD5(name);
 					I18n i18n = i18nRepository.findOne(name);
 					if(i18n == null) {
 						i18n = new I18n();	
 						i18n.setId(id);
-						i18n.setId("msg/"+group.value()+"_"+DlsUtils.encodeMD5(name));
+						i18n.setId("msg/"+group.value()+"_"+OOUtils.encodeMD5(name));
 						i18n.setName(name);
 						i18nRepository.save(i18n);
 					}
@@ -93,7 +93,7 @@ public class StartupRunner implements CommandLineRunner {
 						/** The val depend on database */
 						if(!val.equals(i18n.getVal())){
 							i18n.setVal(val);
-							field.set(null, DlsUtils.strToBaseType(field.getType(), val));
+							field.set(null, OOUtils.strToBaseType(field.getType(), val));
 				        	logger.debug("reload: " + i18n);
 						}
 						if(!i18n.getName().equals(name) ){
@@ -135,7 +135,7 @@ public class StartupRunner implements CommandLineRunner {
     
     @Override
     public void run(String... args) throws Exception {
-        logger.info("dls framework runner " + DlsUtils.toJSON(args));
+        logger.info("dls framework runner " + OOUtils.toJSON(args));
         if(packages != null && !packages.trim().equals("")){
         	annotations.scanPackages(packages.split(","));
         }

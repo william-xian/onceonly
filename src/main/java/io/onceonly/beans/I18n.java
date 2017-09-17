@@ -6,7 +6,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
 
-import io.onceonly.util.DlsUtils;
+import io.onceonly.util.OOUtils;
 
 @Entity
 public class I18n implements Serializable{
@@ -43,6 +43,6 @@ public class I18n implements Serializable{
 		this.val = val;
 	}
 	public String toString() {
-		return DlsUtils.toJSON(this);
+		return OOUtils.toJSON(this);
 	}
 }

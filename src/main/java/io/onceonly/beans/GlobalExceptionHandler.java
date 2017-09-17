@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
 import io.onceonly.exception.Failed;
-import io.onceonly.util.DlsUtils;
+import io.onceonly.util.OOUtils;
 
 
 @RestController
@@ -34,7 +34,7 @@ public class GlobalExceptionHandler {
     	Locale  locale = req.getLocale();
     	String lang = locale == null ? null:locale.getLanguage();
     	if(lang != null && !lang.equals(Locale.getDefault().getLanguage())){
-        	String id = "msg/"+lang+"_"+DlsUtils.encodeMD5(failed.getFormat());	
+        	String id = "msg/"+lang+"_"+OOUtils.encodeMD5(failed.getFormat());	
         	I18n i18n = i18nRepository.findOne(id);
         	if(i18n != null) {
         		defaultFromat  = i18n.getName();

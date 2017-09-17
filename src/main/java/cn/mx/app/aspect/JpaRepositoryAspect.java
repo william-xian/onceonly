@@ -17,7 +17,7 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.HandlerMapping;
 
-import io.onceonly.util.DlsUtils;
+import io.onceonly.util.OOUtils;
 import cn.mx.app.audit.repository.ReqLogRepository;
 import cn.mx.app.entity.ReqLog;
 
@@ -51,10 +51,10 @@ public class JpaRepositoryAspect {
             String params = "";
             if ("POST".equals(method)) {
                 Object[] paramsArray = joinPoint.getArgs();
-                params = DlsUtils.toJSON(paramsArray);
+                params = OOUtils.toJSON(paramsArray);
             } else {
                 Map<?, ?> paramsMap = (Map<?, ?>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
-                params = DlsUtils.toJSON(paramsMap);
+                params = OOUtils.toJSON(paramsMap);
             }
             ReqLog optLog = new ReqLog();
             optLog.setMethod(method);
@@ -65,7 +65,7 @@ public class JpaRepositoryAspect {
             optLog.setCurUser(user);
             optLog.setBeginTime(beginTime);
             tlocal.set(optLog);
-            logger.info(DlsUtils.toJSON(optLog));
+            logger.info(OOUtils.toJSON(optLog));
 
         } catch (Exception e) {
             logger.error("***操作请求日志记录失败doBefore()***", e);
