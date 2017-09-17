@@ -9,8 +9,8 @@ import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 
 @RepositoryRestResource
 @CacheConfig(cacheNames = "i18ns")
-public interface I18nRepository extends CrudRepository<I18n,String> {
-	List<I18n> findByIdStartingWith(@Param("id")String id);
-	I18n findOneByName(@Param("name")String name);
-	List<I18n> findByVal(@Param("val")String val);
+public interface I18nRepository extends CrudRepository<OOI18n,String> {
+	List<OOI18n> findByIdStartingWith(@Param("id")String id);
+	OOI18n findOneByName(@Param("name")String name);
+	List<OOI18n> findByVal(@Param("val")String val);
 }

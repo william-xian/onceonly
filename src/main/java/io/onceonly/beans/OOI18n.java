@@ -9,7 +9,7 @@ import javax.persistence.Id;
 import io.onceonly.util.OOUtils;
 
 @Entity
-public class I18n implements Serializable{
+public class OOI18n implements Serializable{
 	/**
 	 * 
 	 */

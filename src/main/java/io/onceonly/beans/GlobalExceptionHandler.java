@@ -35,7 +35,7 @@ public class GlobalExceptionHandler {
     	String lang = locale == null ? null:locale.getLanguage();
     	if(lang != null && !lang.equals(Locale.getDefault().getLanguage())){
         	String id = "msg/"+lang+"_"+OOUtils.encodeMD5(failed.getFormat());	
-        	I18n i18n = i18nRepository.findOne(id);
+        	OOI18n i18n = i18nRepository.findOne(id);
         	if(i18n != null) {
         		defaultFromat  = i18n.getName();
         	}

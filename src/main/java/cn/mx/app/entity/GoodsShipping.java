@@ -15,6 +15,8 @@ public class GoodsShipping extends BaseEntity {
 	@Column(length = 32,nullable = false)
 	private String goodsOrderId;
 	@Column(length = 32,nullable = false)
+	private String buyerId;
+	@Column(length = 32,nullable = false)
 	private String receiverId;
 	@Column(length = 255)
 	private String addr;
@@ -24,6 +26,13 @@ public class GoodsShipping extends BaseEntity {
 	}
 	public void setGoodsOrderId(String goodsOrderId) {
 		this.goodsOrderId = goodsOrderId;
+	}
+	
+	public String getBuyerId() {
+		return buyerId;
+	}
+	public void setBuyerId(String buyerId) {
+		this.buyerId = buyerId;
 	}
 	public String getReceiverId() {
 		return receiverId;

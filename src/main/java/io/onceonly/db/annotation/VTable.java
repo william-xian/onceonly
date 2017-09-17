@@ -16,6 +16,5 @@ import java.lang.annotation.Target;
 public @interface VTable {
 	Class<?> mainTable();
 	String alias();
-	Join[] left() default {};
-	Join[] right() default {};
+	Join[] joins() default {};
 }

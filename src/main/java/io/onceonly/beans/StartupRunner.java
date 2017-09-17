@@ -33,13 +33,13 @@ public class StartupRunner implements CommandLineRunner {
     @Value("${cn.dls.packages}")
     private String packages;
     
-    private final static AnnotationScanner annotations = new AnnotationScanner(I18n.class,I18nMsg.class,I18nConst.class,VTable.class);
+    private final static AnnotationScanner annotations = new AnnotationScanner(OOI18n.class,I18nMsg.class,I18nConst.class,VTable.class);
  
     private void loadI18nToCache(){
-        Iterable<I18n> i18ns = i18nRepository.findAll();
-        Iterator<I18n> iter = i18ns.iterator();
+        Iterable<OOI18n> i18ns = i18nRepository.findAll();
+        Iterator<OOI18n> iter = i18ns.iterator();
         while(iter.hasNext()) {
-        	I18n i = iter.next();
+        	OOI18n i = iter.next();
         	i18nRepository.findByIdStartingWith(i.getId());
         }
     }
@@ -53,9 +53,9 @@ public class StartupRunner implements CommandLineRunner {
     			try {
 					String name = field.get(null).toString();
 					String id ="msg/"+group.value()+"_"+OOUtils.encodeMD5(name);
-					I18n i18n = i18nRepository.findOne(name);
+					OOI18n i18n = i18nRepository.findOne(name);
 					if(i18n == null) {
-						i18n = new I18n();	
+						i18n = new OOI18n();	
 						i18n.setId(id);
 						i18n.setId("msg/"+group.value()+"_"+OOUtils.encodeMD5(name));
 						i18n.setName(name);
@@ -81,9 +81,9 @@ public class StartupRunner implements CommandLineRunner {
 					String val = field.get(null).toString();
 					String id = "const/" + group.value()+ "_"+ clazz.getSimpleName() + "_" + fieldname;
 					String name = cons.name();
-					I18n i18n = i18nRepository.findOne(id);
+					OOI18n i18n = i18nRepository.findOne(id);
 					if(i18n == null) {
-						i18n = new I18n();
+						i18n = new OOI18n();
 						i18n.setId(id);
 						i18n.setName(name);
 						i18n.setVal(val);
