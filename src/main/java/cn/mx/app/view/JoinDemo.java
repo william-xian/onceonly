@@ -123,6 +123,11 @@ public class JoinDemo {
 		Map<String,String> depends = analyseDepend(vt);
 		Set<String> classes = generateDenpendTableByParams(columnToOriginal,depends,params);
 		classes.add(vt.alias());
+		
+		/** TODO 这些数据不再sql中 需要手动补全 */
+		Set<String> set = new HashSet<>(aliasToEntity.keySet());
+		set.removeAll(classes);
+		
 		String joinSQL = generateJoinSQL(vt,classes);
 		StringBuffer sb = new StringBuffer();
 		if(columnToOriginal.isEmpty()) {
