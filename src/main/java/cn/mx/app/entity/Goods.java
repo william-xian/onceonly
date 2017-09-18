@@ -18,12 +18,6 @@ public class Goods extends BaseEntity{
 	@Column(nullable = true)
 	private Integer genre;
 	
-	public String getId() {
-		return id;
-	}
-	public void setId(String id) {
-		this.id = id;
-	}
 	public String getName() {
 		return name;
 	}

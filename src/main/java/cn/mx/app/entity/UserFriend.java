@@ -13,21 +13,21 @@ public class UserFriend extends BaseEntity{
 	 */
 	private static final long serialVersionUID = 1L;
 
-	@Column(length = 32,nullable = false)
-	private String userId;
-	@Column(length = 32,nullable = false)
-	private String friendId;
+	@Column(nullable = false)
+	private long userId;
+	@Column(nullable = false)
+	private long friendId;
 	
-	public String getUserId() {
+	public long getUserId() {
 		return userId;
 	}
-	public void setUserId(String userId) {
+	public void setUserId(long userId) {
 		this.userId = userId;
 	}
-	public String getFriendId() {
+	public long getFriendId() {
 		return friendId;
 	}
-	public void setFriendId(String friendId) {
+	public void setFriendId(long friendId) {
 		this.friendId = friendId;
 	}
 }

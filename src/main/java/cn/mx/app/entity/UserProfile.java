@@ -4,8 +4,10 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 
 import io.onceonly.db.BaseEntity;
+import io.onceonly.db.annotation.Extend;
 
 @Entity
+@Extend(entity=UserChief.class)
 public class UserProfile extends BaseEntity{
     /**
 	 * 

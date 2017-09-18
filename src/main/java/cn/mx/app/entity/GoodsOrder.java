@@ -12,26 +12,26 @@ public class GoodsOrder extends BaseEntity{
 	 */
 	private static final long serialVersionUID = 1L;
 
-	@Column(length = 32,nullable = false)
-	private String userId;
-	@Column(length = 32,nullable = false)
-	private String goodsId;
+	@Column(nullable = false)
+	private long userId;
+	@Column(nullable = false)
+	private long goodsId;
 	@Column(nullable = false)
 	private Integer amount;
 	@Column(nullable = false)
 	private Integer money;
 	@Column(nullable = false)
 	private Long ctime;
-	public String getUserId() {
+	public long getUserId() {
 		return userId;
 	}
-	public void setUserId(String userId) {
+	public void setUserId(long userId) {
 		this.userId = userId;
 	}
-	public String getGoodsId() {
+	public long getGoodsId() {
 		return goodsId;
 	}
-	public void setGoodsId(String goodsId) {
+	public void setGoodsId(long goodsId) {
 		this.goodsId = goodsId;
 	}
 	public Integer getAmount() {

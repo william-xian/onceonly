@@ -12,32 +12,32 @@ public class GoodsShipping extends BaseEntity {
 	 */
 	private static final long serialVersionUID = 1L;
 
-	@Column(length = 32,nullable = false)
-	private String goodsOrderId;
-	@Column(length = 32,nullable = false)
-	private String buyerId;
-	@Column(length = 32,nullable = false)
-	private String receiverId;
+	@Column(nullable = false)
+	private long goodsOrderId;
+	@Column(nullable = false)
+	private long buyerId;
+	@Column(nullable = false)
+	private long receiverId;
 	@Column(length = 255)
 	private String addr;
 	
-	public String getGoodsOrderId() {
+	public long getGoodsOrderId() {
 		return goodsOrderId;
 	}
-	public void setGoodsOrderId(String goodsOrderId) {
+	public void setGoodsOrderId(long goodsOrderId) {
 		this.goodsOrderId = goodsOrderId;
 	}
 	
-	public String getBuyerId() {
+	public long getBuyerId() {
 		return buyerId;
 	}
-	public void setBuyerId(String buyerId) {
+	public void setBuyerId(long buyerId) {
 		this.buyerId = buyerId;
 	}
-	public String getReceiverId() {
+	public long getReceiverId() {
 		return receiverId;
 	}
-	public void setReceiverId(String receiverId) {
+	public void setReceiverId(long receiverId) {
 		this.receiverId = receiverId;
 	}
 	public String getAddr() {

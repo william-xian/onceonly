@@ -4,13 +4,10 @@ import java.io.Serializable;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
 import javax.persistence.Id;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.Table;
-
-import org.hibernate.annotations.GenericGenerator;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.gson.Gson;
@@ -30,25 +27,23 @@ public class BaseEntity implements Serializable{
 	private static final long serialVersionUID = 1L;
 	@Id
     @Column(nullable = false, length=32)
-	@GenericGenerator(name = "system-uuid", strategy = "uuid")
-	@GeneratedValue(generator = "system-uuid")
-	protected String id;
+	protected long id;
 	@JsonIgnore
     @Column(nullable = false)
-    private Boolean active = true;
-	public String getId() {
+    private boolean _del = false;
+	
+	public long getId() {
 		return id;
 	}
-	public void setId(String id) {
+	public void setId(long id) {
 		this.id = id;
 	}
-	public Boolean isActive() {
-		return active;
+	public boolean is_del() {
+		return _del;
 	}
-	public void setActive(Boolean active) {
-		this.active = active;
+	public void set_del(boolean _del) {
+		this._del = _del;
 	}
-
 	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
     @Override
 	public String toString(){
