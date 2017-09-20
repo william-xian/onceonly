@@ -10,6 +10,7 @@ import java.util.Set;
 
 import io.onceonly.db.annotation.Join;
 import io.onceonly.db.annotation.VTable;
+import io.onceonly.exception.Failed;
 import io.onceonly.util.Tuple2;
 import io.onceonly.util.Tuple3;
 
@@ -173,13 +174,11 @@ public class TableMeta {
 				Tuple3<Class<?>,String,Class<?>> tuple = new Tuple3<>(a,cnd,b);
 				task.add(tuple);
 				last = depend.a;
-				depend = depends.get(depend);
+				depend = depends.get(depend.a);
 			}
 			Collections.reverse(task);
 		}
-		SqlTask st = new SqlTask();
-		st.setJoinSql(sb.toString());
-		st.setTask(task);
+		
 		Map<Class<?>, Set<String>> missColumns = new HashMap<>(aliasToMissColumns.size());
 		for(String alias:aliasToMissColumns.keySet()) {
 			Class<?> key = aliasToEntity.get(alias);
@@ -190,6 +189,10 @@ public class TableMeta {
 				missColumns.put(key, aliasToMissColumns.get(alias));
 			}
 		}
+		
+		SqlTask st = new SqlTask();
+		st.setJoinSql(sb.toString());
+		st.setTask(task);
 		st.setMissColumns(missColumns);
 		return st;
 	}
@@ -221,11 +224,14 @@ public class TableMeta {
 		}
 		Set<String> result = new HashSet<>();
 		for(String alias:set) {
+			if(!aliasToEntity.containsKey(alias)) {
+				Failed.throwError("Entity alias:%s is not exist!", alias);
+			}
 			result.add(alias);
 			Tuple2<String,String> depend = depends.get(alias);
 			while(depend != null) { 
 				result.add(depend.a);
-				depend = depends.get(depend);
+				depend = depends.get(depend.a);
 			}
 		}
 		return result;

@@ -1,19 +1,10 @@
 package cn.mx.app.view;
 
-import java.lang.reflect.Field;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
-import javax.persistence.Column;
-
 import cn.mx.app.entity.Goods;
 import cn.mx.app.entity.GoodsDesc;
 import cn.mx.app.entity.GoodsOrder;
 import cn.mx.app.entity.GoodsShipping;
 import cn.mx.app.entity.UserChief;
-import cn.mx.app.entity.UserFriend;
 import cn.mx.app.entity.UserProfile;
 import cn.mx.app.entity.Wallet;
 import io.onceonly.db.annotation.Join;
@@ -45,7 +36,7 @@ public class JoinDemo {
 	private Integer saled;
 	@VColumn("receiver.name")
 	private String receiverName;
-	@VColumn("wc.balance")
+	@VColumn("uw.balance")
 	private int buyerBalance;
 	
 	public String getBuyerName() {
