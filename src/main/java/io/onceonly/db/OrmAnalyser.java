@@ -20,6 +20,7 @@ import cn.mx.app.view.JoinDemo;
 import io.onceonly.db.annotation.Join;
 import io.onceonly.db.annotation.VColumn;
 import io.onceonly.db.annotation.VTable;
+import io.onceonly.util.OOAssert;
 import io.onceonly.util.Tuple2;
 
 public class OrmAnalyser {
@@ -100,7 +101,7 @@ public class OrmAnalyser {
 						Class<?> entity = aliasToEntity.get(alias);
 						if(vtable.get(entity).getColumns().contains(field.getName())) {
 							if(uniqueAlias != null) {
-								System.err.printf("%s和%s 都包含字段:%s\n", uniqueAlias,alias,field.getName());
+								OOAssert.fatal("%s和%s 都包含字段:%s\n", uniqueAlias,alias,field.getName());
 							}else {
 								uniqueAlias = alias;	
 							}
@@ -109,7 +110,7 @@ public class OrmAnalyser {
 					if(uniqueAlias != null) {
 						map.put(field.getName(), uniqueAlias+"." + field.getName());	
 					}else {
-						System.err.printf("找不到 %s\n",field.getName());
+						OOAssert.fatal("找不到 %s\n",field.getName());
 					}
 				}
 			}
@@ -173,12 +174,12 @@ public class OrmAnalyser {
 			if(fAlias != null) {
 				Tuple2<String,String> otherDepend = map.get(fAlias);
 				if(otherDepend != null && !otherDepend.equals(tAlias)) {
-					System.err.println(fAlias+"依赖关系两个不同的表：" + otherDepend + "," + tAlias);
+					OOAssert.fatal("%s 依赖关系两个不同的表：%s, %s",fAlias, otherDepend, tAlias);
 				}else {
 					map.put(fAlias,new Tuple2<String,String>(tAlias,join.cnd()));	
 				}
 			}else {
-				System.err.println("没有别名引用类，也没有实体类，错误的配置");
+				OOAssert.fatal("没有别名引用类，也没有实体类，错误的配置");
 			}
 		}
 		return map;

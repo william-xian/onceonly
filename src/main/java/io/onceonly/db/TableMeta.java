@@ -11,6 +11,7 @@ import java.util.Set;
 import io.onceonly.db.annotation.Join;
 import io.onceonly.db.annotation.VTable;
 import io.onceonly.exception.Failed;
+import io.onceonly.util.OOAssert;
 import io.onceonly.util.Tuple2;
 import io.onceonly.util.Tuple3;
 
@@ -75,7 +76,7 @@ public class TableMeta {
 				}else if(join.right() != void.class) {
 					name = join.right().getSimpleName();
 				}else {
-					System.err.println("没有别名引用类，也没有实体类，错误的配置");
+					OOAssert.fatal("没有别名引用类，也没有实体类，错误的配置");
 					continue;
 				}
 			}
@@ -120,7 +121,7 @@ public class TableMeta {
 							join.right().getSimpleName(), join.alias(),originTbl,targetTbl,originTbl);
 				}
 			}else {
-				System.err.println("没有别名引用类，也没有实体类，错误的配置");
+				OOAssert.fatal("没有别名引用类，也没有实体类，错误的配置");
 			}
 			sb.append(sql+"\n");
 		}
@@ -132,7 +133,7 @@ public class TableMeta {
 		classes.add(vt.alias());
 		String joinSQL = generateJoinSQL(vt,classes);
 		if(columnToOriginal.isEmpty()) {
-			System.err.println("没有字段的表");
+			OOAssert.fatal("没有字段的表");
 		}
 		Map<String,Set<String>> aliasToMissColumns = new HashMap<>();
 		StringBuffer sb = new StringBuffer("select ");
