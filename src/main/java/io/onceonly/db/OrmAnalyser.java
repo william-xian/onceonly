@@ -24,7 +24,6 @@ import io.onceonly.util.Tuple2;
 
 public class OrmAnalyser {
 
-
 	private static final Map<Class<?>,TableMeta> vtable = new HashMap<>();
 	
 	public static void main(String[] args) {
