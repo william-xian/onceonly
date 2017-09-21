@@ -4,6 +4,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 
 import io.onceonly.db.BaseEntity;
+import io.onceonly.db.annotation.RefFrom;
 
 @Entity
 public class GoodsOrder extends BaseEntity{
@@ -12,9 +13,11 @@ public class GoodsOrder extends BaseEntity{
 	 */
 	private static final long serialVersionUID = 1L;
 
+	@RefFrom(entity=UserChief.class)
 	@Column(nullable = false)
 	private long userId;
 	@Column(nullable = false)
+	@RefFrom(entity=Goods.class)
 	private long goodsId;
 	@Column(nullable = false)
 	private Integer amount;

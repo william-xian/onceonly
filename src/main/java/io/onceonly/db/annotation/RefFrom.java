@@ -13,6 +13,7 @@ import java.lang.annotation.Target;
 @Documented
 public @interface RefFrom {
     Class<?> entity();
+    String alias() default "";
     /** 使用外键  */
     boolean useFK() default true;
 }

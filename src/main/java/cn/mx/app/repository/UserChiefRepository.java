@@ -14,7 +14,7 @@ import cn.mx.app.entity.UserChief;
 
 @CacheConfig(cacheNames = "user")
 @RepositoryRestResource(collectionResourceRel = "user_chief", path = "user_chief")
-public interface UserRepository extends PagingAndSortingRepository<UserChief,String> {
+public interface UserChiefRepository extends PagingAndSortingRepository<UserChief,Long> {
 	@Cacheable
 	UserChief findByName(@Param("name")String name);
 	Page<UserChief> findByName(Pageable pageable,@Param("name")String name);

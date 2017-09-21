@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 import io.onceonly.exception.Failed;
 import cn.mx.app.common.Messages;
 import cn.mx.app.entity.UserChief;
-import cn.mx.app.repository.UserRepository;
+import cn.mx.app.repository.UserChiefRepository;
 import cn.mx.app.service.UserService;
 import cn.mx.app.view.UserView;
 
@@ -25,7 +25,7 @@ public class UserController {
 	private UserService userService;
 
 	@Autowired
-	private UserRepository userRepository;
+	private UserChiefRepository userRepository;
 	
 	@RequestMapping(value = "/add", method = { RequestMethod.GET, RequestMethod.POST })
 	@ResponseBody
