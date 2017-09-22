@@ -20,10 +20,10 @@ import io.onceonly.db.annotation.VTable;
 	joins = {
 		@Join(left=Wallet.class,alias="uw"),
 		@Join(left=UserProfile.class,alias="up"),
-		@Join(left=GoodsOrder.class,alias="go",cnd="go.userId = buyer.id and go.del=false"),
-		@Join(left=GoodsShipping.class,alias="gs",tAlias="go",cnd="gs.goodsOrderId=go.id and gs.del = false"),
+		@Join(left=GoodsOrder.class,alias="go",cnd="go.userId=buyer.id"),
+		@Join(left=GoodsShipping.class,alias="gs",tAlias="go",cnd="gs.goodsOrderId=go.id"),
 		@Join(left=UserChief.class,alias="receiver",tAlias="gs",cnd="gs.receiverId=receiver.id"),
-		@Join(left=Goods.class,alias="g",tAlias="go",cnd = "go.goodsId=g.id and g.del=false g.genre = 1"),
+		@Join(left=Goods.class,alias="g",tAlias="go",cnd = "go.goodsId=g.id"),
 		@Join(left=GoodsDesc.class,alias="gd",tAlias="g")
 	}
 )
