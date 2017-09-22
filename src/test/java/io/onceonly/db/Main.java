@@ -1,4 +1,4 @@
-package cn.mx.test;
+package io.onceonly.db;
 
 public class Main {
 

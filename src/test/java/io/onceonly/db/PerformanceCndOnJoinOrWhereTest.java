@@ -1,10 +1,11 @@
-package cn.mx.test;
+package io.onceonly.db;
 
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.Before;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,13 @@ import cn.mx.app.repository.UserFriendRepository;
 import cn.mx.app.repository.UserProfileRepository;
 import cn.mx.app.repository.WalletRepository;
 
+
+/**
+ * 构造 10000个用户 {UserChief,UserProfile,Wallet} id <- [1,10000] 
+ * 构造 1000个商品{Goods,GoodsDesc} 
+ * 构造10000*10个订单
+ * 构造10000*10个好友关系每人有10个
+ */
 @RunWith(SpringRunner.class)
 @SpringBootTest(classes = Launcher.class)
 public class PerformanceCndOnJoinOrWhereTest {
@@ -39,8 +47,7 @@ public class PerformanceCndOnJoinOrWhereTest {
 	private JdbcTemplate jdbcTemplate;
 	
 	@Autowired
-	private 
-	GoodsDescRepository goodsDescRepository;
+	private GoodsDescRepository goodsDescRepository;
 	@Autowired
 	private GoodsRepository goodsRepository;
 	@Autowired
@@ -48,25 +55,24 @@ public class PerformanceCndOnJoinOrWhereTest {
 	@Autowired
 	private GoodsShippingRepository goodsShippingRepository;
 	@Autowired
-	private 
-	UserChiefRepository userChiefRepository;
+	private UserChiefRepository userChiefRepository;
 	@Autowired
-	private 
-	UserFriendRepository userFriendRepository;
+	private UserFriendRepository userFriendRepository;
 	@Autowired
-	private 
-	UserProfileRepository userProfileRepository;
+	private UserProfileRepository userProfileRepository;
 	@Autowired
-	private 
-	WalletRepository walletRepository;
+	private WalletRepository walletRepository;
 	
-	//@Test
+	@Before
 	public void addUser() {
+		if(userChiefRepository.count() != 0) {
+			return;
+		}
 		List<UserChief> ucs = new ArrayList<>(10000);
 		List<UserProfile> ups = new ArrayList<>(10000);
 		List<Wallet> ws = new ArrayList<>(10000);
 		for(Long id=1L; id <= 10000; id++) {
-			String uniq = String.format("%7d", id);
+			String uniq = String.format("%07d", id);
 			UserChief uc = new UserChief();
 			uc.setId(id);
 			uc.setAvatar("avatar"+uniq);
@@ -94,12 +100,15 @@ public class PerformanceCndOnJoinOrWhereTest {
 		walletRepository.save(ws);
 	}
 	
-	//@Test
+	@Before
 	public void addGoods() {
+		if(goodsRepository.count() != 0) {
+			return;
+		}
 		List<Goods> gs = new ArrayList<>(1000);
 		List<GoodsDesc> gds = new ArrayList<>(1000);
 		for(Long id=1L; id <= 1000; id++) {
-			String uniq = String.format("%7d", id);
+			String uniq = String.format("%07d", id);
 			Goods g = new Goods();
 			g.setId(id);
 			g.setGenre((int)(id%2));
@@ -116,25 +125,40 @@ public class PerformanceCndOnJoinOrWhereTest {
 		goodsDescRepository.save(gds);
 	}
 
-	//@Test
+	@Before
 	public void addFriend() {
+		if(userFriendRepository.count() != 0) {
+			return;
+		}
 		List<UserFriend> ufs = new ArrayList<>(100000);
-		for(Long id=1L; id <= 100000; id++) {
+		for(Long id=1L; id <= 60000; id++) {
 			UserFriend go = new UserFriend();
 			go.setId(id);
-			go.setFriendId((id+5)%10000+1);
-			go.setUserId(id%10000+1);
+			long uid = id%10000+1;
+			go.setUserId(uid);
+			go.setFriendId((uid+(id/10000)+1)%10000+1);
+			ufs.add(go);
+		}
+		for(Long id=60001L; id <= 100000; id++) {
+			UserFriend go = new UserFriend();
+			go.setId(id);
+			long uid = id%10000+1;
+			go.setUserId(uid);
+			go.setFriendId((uid+10000-(id/10000)+1)%10000+1);
 			ufs.add(go);
 		}
 		userFriendRepository.save(ufs);
 	}
 	
-	//@Test
+	@Before
 	public void addGoodsShipping() {
+		if(goodsOrderRepository.count() != 0) {
+			return;
+		}
 		List<GoodsOrder> gos = new ArrayList<>(100000);
 		List<GoodsShipping> gss = new ArrayList<>(100000);
 		for(Long id=1L; id <= 100000; id++) {
-			String uniq = String.format("%7d", id);
+			String uniq = String.format("%07d", id);
 			GoodsOrder go = new GoodsOrder();
 			go.setId(id);
 			go.setGoodsId(id%1000+1);
@@ -161,13 +185,12 @@ public class PerformanceCndOnJoinOrWhereTest {
 	@Test
 	public void cndOnJoin() {
 		String sql = "";
-		sql+=" select buyer.name buyer_name,g.name goods_name,r.name rname";
-		sql+=" from goods_shipping gs";
-		sql+=" left join user_chief buyer on buyer.id = buyer_id and buyer_id < 100";
-		sql+=" left join user_chief r on r.id = receiver_id";
-		sql+=" left join goods_order go on go.id = goods_order_id";
-		sql+=" left join goods g on go.goods_id = g.id;";
-		long time = System.currentTimeMillis();
+		sql += "select uf.user_id uid, ufp.nickname uname,uf.friend_id fid,mfp.nickname fname,mf.friend_id mffid";
+		sql += "from user_friend uf";
+		sql += "right join user_friend mf on uf.friend_id = mf.user_id and mf.user_id > 9000";
+		sql += "left join user_profile ufp on ufp.id=uf.user_id";
+		sql += "left join user_profile mfp on mfp.id=mf.user_id";
+		sql += "limit 300";
 		jdbcTemplate.query(sql,new RowMapper<Object[]>() {
 			@Override
 			public Object[] mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -176,19 +199,17 @@ public class PerformanceCndOnJoinOrWhereTest {
 			}
 			
 		});
-		System.out.println("join spend:" + (System.currentTimeMillis() - time));
 	}
 	@Test
 	public void cndOnWhere() {
 		String sql = "";
-		sql+=" select buyer.name buyer_name,g.name goods_name,r.name rname";
-		sql+=" from goods_shipping gs";
-		sql+=" left join user_chief buyer on buyer.id = buyer_id";
-		sql+=" left join user_chief r on r.id = receiver_id";
-		sql+=" left join goods_order go on go.id = goods_order_id";
-		sql+=" left join goods g on go.goods_id = g.id";
-		sql+=" where buyer_id < 100;";
-		long time = System.currentTimeMillis();
+		sql += "select uf.user_id uid, ufp.nickname uname,uf.friend_id fid,mfp.nickname fname,mf.friend_id mffid";
+		sql += "from user_friend uf";
+		sql += "right join user_friend mf on uf.friend_id = mf.user_id";
+		sql += "left join user_profile ufp on ufp.id=uf.user_id";
+		sql += "left join user_profile mfp on mfp.id=mf.user_id";
+		sql += "where uf.user_id = mf.friend_id and mf.user_id > 9000";
+		sql += "limit 300";
 		jdbcTemplate.query(sql,new RowMapper<Object[]>() {
 			@Override
 			public Object[] mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -197,7 +218,5 @@ public class PerformanceCndOnJoinOrWhereTest {
 			}
 			
 		});
-
-		System.out.println("where spend:" + (System.currentTimeMillis() - time));
 	}
 }
