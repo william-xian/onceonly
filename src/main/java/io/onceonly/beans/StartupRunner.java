@@ -1,8 +1,10 @@
 package io.onceonly.beans;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -46,6 +48,7 @@ public class StartupRunner implements CommandLineRunner {
     private void annlysisI18nMsg(){
     	Set<Class<?>> classes = annotations.getClasses(I18nMsg.class);
     	if(classes == null) return;
+    	List<OOI18n> i18ns = new ArrayList<>();
     	for(Class<?>clazz:classes){
     		I18nMsg group = clazz.getAnnotation(I18nMsg.class);
     		for(Field field:clazz.getFields()){
@@ -59,18 +62,20 @@ public class StartupRunner implements CommandLineRunner {
 						i18n.setId(id);
 						i18n.setId("msg/"+group.value()+"_"+OOUtils.encodeMD5(name));
 						i18n.setName(name);
-						i18nRepository.save(i18n);
+						i18ns.add(i18n);
 					}
 				} catch (IllegalArgumentException | IllegalAccessException e) {
 					Failed.throwError(e.getMessage());
 				}
     		}
     	}
+		i18nRepository.save(i18ns);
     }
 
     private void annlysisConst(){
     	Set<Class<?>> classes = annotations.getClasses(I18nConst.class);
     	if(classes == null) return;
+    	List<OOI18n> i18ns = new ArrayList<>();
     	for(Class<?>clazz:classes){
     		I18nConst group = clazz.getAnnotation(I18nConst.class);
     		for(Field field:clazz.getFields()){
@@ -87,8 +92,8 @@ public class StartupRunner implements CommandLineRunner {
 						i18n.setId(id);
 						i18n.setName(name);
 						i18n.setVal(val);
-						i18nRepository.save(i18n);
 			        	logger.debug("add: " + i18n);
+			        	i18ns.add(i18n);
 					}else {
 						/** The val depend on database */
 						if(!val.equals(i18n.getVal())){
@@ -107,6 +112,7 @@ public class StartupRunner implements CommandLineRunner {
 				}
     		}
     	}
+		i18nRepository.save(i18ns);
     }
     
     /**
