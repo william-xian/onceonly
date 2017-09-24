@@ -7,6 +7,8 @@
  
 > 3 适当时主键作为筛选和排序的条件
 
+> 4 聚合函数->纵向表拉成横向
+
 ### 方案一.VTable 通过减少连接表次数以减少笛卡尔积中间结果
 > 1.根据查询条件，分页，排序等，动态生成连接sql语句
 > 2.通过主键查询，查一页内，补全未查询的字段。
@@ -17,3 +19,13 @@
 >所有的依赖关系仅以主键生成
 >1.不使用虚表，提供接口，/thinking -> 结论 -> experience {id,[param],sql,resultType}
 
+####关系链表达式  <推到关系链> >> <结果集>
+> <推导关系> >> <结果集>
+> {
+	{A.bid1->B.id} >> {[A:{name alias,...}],},
+  }
+ * case 正向 : 
+ {GoodsOrder.buyerId->User} >> {GoodsOrder{name goodsName,id goodsOrderId},User{name buyerName,receiverAvatar}}
+ {GoodsOrder.receiverId->User} >> {GoodsOrder{name goodsName,id goodsOrderId},User{name receiverName,receiverAvatar}}
+ * 
+ * case 反向推到：User.id->GoodsOrder.buyerId
