@@ -16,12 +16,17 @@ public class DependDeduceEngine {
 	 */
 	Map<String,String> tableColumn = new HashMap<>();
 	
+	Map<String,String> tableToEntity = new HashMap<>();
+	
 	/**
 	 * 虚表字段，表来源
 	 */
 	Map<String,String> columnTable =  new HashMap<>();
 	
-	private	Map<String,Map<String,Set<String>>> relMap= new HashMap<>();
+	/**
+	 * <表，<关联表，关联关系>>
+	 */
+	private	Map<String,Map<String,String>> relMap= new HashMap<>();
 	
 	private void analyse(String relation) {
 		String rels[] = relation.split(",");
@@ -34,28 +39,28 @@ public class DependDeduceEngine {
 					String[] a_key = a.split(".");
 					String[] b_key = b.split(".");
 					if(a_key.length == 2 && b_key.length == 2) {
-						Map<String,Set<String>> a2b = relMap.get(a_key[0]);
+						Map<String,String> a2b = relMap.get(a_key[0]);
 						if(a2b == null) {
 							a2b = new HashMap<>();
 							relMap.put(a_key[0], a2b);
 						}
-						Set<String> abMapping = a2b.get(b_key[0]);
+						String abMapping = a2b.get(b_key[0]);
 						if(abMapping == null) {
-							abMapping = new HashSet<>();
-							a2b.put(b_key[0], abMapping);
+							a2b.put(b_key[0], relation);
+						}else {
+							//TODO 两个表有多个关联关系 需要命别名
 						}
-						abMapping.add(relation);
-						Map<String,Set<String>> b2a = relMap.get(b_key[0]);
+						Map<String,String> b2a = relMap.get(b_key[0]);
 						if(b2a == null) {
 							b2a = new HashMap<>();
 							relMap.put(b_key[0], b2a);
 						}
-						Set<String> baMapping = b2a.get(a_key[0]);
+						String baMapping = b2a.get(a_key[0]);
 						if(baMapping == null) {
-							baMapping = new HashSet<>();
-							b2a.put(a_key[0], baMapping);
+							b2a.put(a_key[0], relation);
+						}else {
+							//TODO 两个表有多个关联关系 需要命别名
 						}
-						baMapping.add(relation);
 						
 					}else {
 						OOAssert.warnning("关系必须是<表名>.<主键>");
@@ -102,6 +107,7 @@ public class DependDeduceEngine {
 	 * @return
 	 */
 	public DependDeduceEngine append(String relation,String result) {
+		//TODO 同一个表关联多次 需要起别名
 		analyse(relation);
 		resolve(result);
 		return this;
@@ -138,7 +144,7 @@ public class DependDeduceEngine {
 		if(spoor.contains(src)) {
 			return false;
 		}
-		Map<String,Set<String>> map = relMap.get(src);
+		Map<String,String> map = relMap.get(src);
 		path.add(src);
 		spoor.add(src);
 		if(map.containsKey(dest)) {
@@ -154,7 +160,7 @@ public class DependDeduceEngine {
 	}
 	
 	
-	/** 
+	/** TODO
 	 * 主表和关联参数，生成一个SQL的join部分
 	 * @param mainEntity
 	 */
