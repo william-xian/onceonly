@@ -29,15 +29,14 @@
 >所有的依赖关系仅以主键生成
 >1.不使用虚表，提供接口，/thinking -> 结论 -> experience {id,[param],sql,resultType}
 
-####关系链表达式  <推到关系链> >> <结果集>
-> <推导关系> >> <结果集>
-> {
-	{A.bid1->B.id} >> {[A:{name alias,...}],},
-  }
- * case 正向 : 
- {GoodsOrder.buyerId->User} >> {GoodsOrder{name goodsName,id goodsOrderId},User{name buyerName,receiverAvatar}}
- {GoodsOrder.receiverId->User} >> {GoodsOrder{name goodsName,id goodsOrderId},User{name receiverName,receiverAvatar}}
- *
-
+####关系链表达式  <推到关系链> {<结果集>}
+例如：
+A {name aName,bid}
+A.bid>B {name bName}
+A.bid2>B {name bName2}
+或者 :
+B {name bName}
+B.id-A.bid>A {name aName}
+B.id-A.bid>A.bid2>B {name bName2}
  
  
