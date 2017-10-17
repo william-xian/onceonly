@@ -30,13 +30,32 @@
 >1.不使用虚表，提供接口，/thinking -> 结论 -> experience {id,[param],sql,resultType}
 
 ####关系链表达式  <推到关系链> {<结果集>}
-例如：
-A {name aName,bid}
-A.bid>B {name bName}
-A.bid2>B {name bName2}
-或者 :
-B {name bName}
-B.id-A.bid>A {name aName}
-B.id-A.bid>A.bid2>B {name bName2}
- 
- 
+---
+表：
+
+	U{name,age};
+	R{uid,fid};
+	G{name,price};
+	O{uid,gid};
+---
+sql：
+
+	select u.name uname,f.name fname,g.name gname
+	from O o
+	left join U u on o.uid = u.id
+	left join G g on o.gid = g.id
+	left join R r on o.uid = r.uid
+	left join U f on r.fid = f.id
+---
+* 表达式1
+
+	O{uid,gid};
+	O.uid-U {name uame,age};
+	O.gid-G {name gname};
+	O.uid-R.uid-R.fid-U {name fname};
+* 表达式2
+
+	U {name uname,age};
+	U-O.uid-O {uid,gid};
+	U-O.uid-O.gid-G {name gname};
+	U-R.uid-R.fid-U {name fname};
