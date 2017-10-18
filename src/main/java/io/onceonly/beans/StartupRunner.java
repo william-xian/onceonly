@@ -2,10 +2,8 @@ package io.onceonly.beans;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.apache.commons.logging.Log;
@@ -19,8 +17,6 @@ import org.springframework.stereotype.Component;
 import io.onceonly.annotation.Const;
 import io.onceonly.annotation.I18nConst;
 import io.onceonly.annotation.I18nMsg;
-import io.onceonly.db.annotation.VColumn;
-import io.onceonly.db.annotation.VTable;
 import io.onceonly.exception.Failed;
 import io.onceonly.util.AnnotationScanner;
 import io.onceonly.util.OOUtils;
@@ -35,7 +31,7 @@ public class StartupRunner implements CommandLineRunner {
     @Value("${cn.dls.packages}")
     private String packages;
     
-    private final static AnnotationScanner annotations = new AnnotationScanner(OOI18n.class,I18nMsg.class,I18nConst.class,VTable.class);
+    private final static AnnotationScanner annotations = new AnnotationScanner(OOI18n.class,I18nMsg.class,I18nConst.class);
  
     private void loadI18nToCache(){
         Iterable<OOI18n> i18ns = i18nRepository.findAll();
@@ -115,30 +111,6 @@ public class StartupRunner implements CommandLineRunner {
 		i18nRepository.save(i18ns);
     }
     
-    /**
-     * TODO 解析注解 VTable
-     * 1. 生成自动连接的表模板 
-     * 2. 优化并动态生成连接信息，（分页，数据量，是否是筛选条件，参数警告信息：是否建立索引，等）
-     */
-	private void annlysisVTable(){
-    	Set<Class<?>> classes = annotations.getClasses(VTable.class);
-    	if(classes == null) return;
-    	for(Class<?>clazz:classes){
-        	Map<String,Field> fieldsMapping = new HashMap<>();
-        	for(Field field:clazz.getFields()){
-    			VColumn column = field.getAnnotation(VColumn.class);
-    			if(column != null) {
-        			field.setAccessible(true);
-    				if(column.value() != ""){
-    					fieldsMapping.put(column.value(), field);
-    				}
-    			}
-    		}
-        	//VTABLES.put(clazz, fieldsMapping);
-        	logger.debug(clazz.getName()+":" + fieldsMapping.keySet());
-    	}
-    }
-    
     @Override
     public void run(String... args) throws Exception {
         logger.info("dls framework runner " + OOUtils.toJSON(args));
@@ -147,7 +119,6 @@ public class StartupRunner implements CommandLineRunner {
         }
         annlysisI18nMsg();
         annlysisConst();
-        annlysisVTable();
         loadI18nToCache();
     }
 }

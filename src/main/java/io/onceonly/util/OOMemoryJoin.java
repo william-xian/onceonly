@@ -11,7 +11,7 @@ import io.onceonly.db.BaseEntity;
 /**
  * 内存间表关联
  **/
-public class OOJoinEntityUtil {
+public class OOMemoryJoin {
 	
 	private Class<?> mainEntity;
 	/** 每种类型，<主键，数据 >*/
@@ -20,10 +20,10 @@ public class OOJoinEntityUtil {
 	/** 推倒图 */
 	private Map<Class<?>,Map<Class<?>,Set<String>>> deduceMap = new HashMap<>();
 
-	public OOJoinEntityUtil(Class<?> mainEntity) {
+	public OOMemoryJoin(Class<?> mainEntity) {
 		this.mainEntity = mainEntity;
 	}
-	public <T extends BaseEntity> OOJoinEntityUtil  putData(Class<T> type,List<T> data) {
+	public <T extends BaseEntity> OOMemoryJoin  putData(Class<T> type,List<T> data) {
 		Map<Object, Object> valueMap = values.get(type);
 		if (valueMap == null) {
 			valueMap = new HashMap<>();
@@ -42,7 +42,7 @@ public class OOJoinEntityUtil {
 	 * @param b
 	 * @return
 	 */
-	public OOJoinEntityUtil append(Class<?> a,String fieldName,Class<?> b){
+	public OOMemoryJoin append(Class<?> a,String fieldName,Class<?> b){
 		Map<Class<?>,Set<String>> relA = deduceMap.get(a);
 		if(relA == null) {
 			relA = new HashMap<>();

@@ -2,7 +2,7 @@ package io.onceonly.db;
 
 import org.junit.Test;
 
-public class DependDeduceEngineTest {
+public class DDEngineTest {
 
 	@Test
 	public void params() {

@@ -8,7 +8,7 @@ import io.onceonly.util.OOUtils;
 public class Main {
 
 	public static void main(String[] args) {
-		DependDeduceEngine dde = new DependDeduceEngine();
+		DDEngine dde = new DDEngine();
 		
 		dde.append("O {uid, gid};")
 		.append("O.uid-U {name uame, age};")
@@ -21,7 +21,7 @@ public class Main {
 		params.add("fname");
 		SqlParamData spd = dde.deduceDependByParams("O", params);
 		System.out.println(spd);
-		dde.genSql(spd);
+		dde.generateSql(spd);
 		System.out.println(spd.getSql());
 	}
 }

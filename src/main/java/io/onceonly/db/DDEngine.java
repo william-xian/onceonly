@@ -2,7 +2,6 @@ package io.onceonly.db;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -11,10 +10,14 @@ import java.util.Map;
 import java.util.Set;
 
 import io.onceonly.util.OOAssert;
-import io.onceonly.util.OOUtils;
 import io.onceonly.util.Tuple3;
 
-public class DependDeduceEngine {
+/**
+ * 数据推倒引擎
+ * @author Administrator
+ *
+ */
+public class DDEngine {
 	
 	public Map<String,DDMeta> pathToMeta= new HashMap<>();
 	
@@ -34,7 +37,7 @@ public class DependDeduceEngine {
 	 * @param result   A {id aid,name AName,bid}; A.bid-B {name BName,CId}; A.bid-B.cid-C {name CName}
 	 * @return
 	 */
-	public DependDeduceEngine append(String resultSet) {
+	public DDEngine append(String resultSet) {
 		String[] sets = resultSet.split(";");
 		for(String set:sets) {
 			String[] tbl_columns = set.split("\\{|\\}");
@@ -191,7 +194,6 @@ public class DependDeduceEngine {
 
 		Set<DDMeta> depends = new HashSet<>();
 		List<String> dependNamePaths = new ArrayList<>();
-		//TODO 三重以上推倒关系需要要转换成两两转换关系
 		for(DDMeta meta:set) {
 			Set<DDMeta> spoor = new HashSet<>();
 			List<DDMeta> path = new ArrayList<>();
@@ -215,7 +217,6 @@ public class DependDeduceEngine {
 		}
 		
 		List<String> supplementNamePaths = new ArrayList<>(supplements.size());
-		//TODO 三重以上推倒关系需要要转换成两两转换关系
 		for(DDMeta meta:supplements) {
 			Set<DDMeta> spoor = new HashSet<>();
 			List<DDMeta> path = new ArrayList<>();
@@ -273,7 +274,7 @@ public class DependDeduceEngine {
 	}
 	
 	
-	public void genSql(SqlParamData data) {
+	public void generateSql(SqlParamData data) {
 		DDMeta mainMeta = data.getMain();
 		Set<DDMeta> depends = data.getDepends();
 		List<String> dnps = data.getDependNamePaths();
@@ -305,147 +306,6 @@ public class DependDeduceEngine {
 		}
 		
 		data.setSql(sql.toString());
-	}
-	
-}
-
-
-class DDMeta {
-	String path;
-	String name;
-	String table;
-	String pkName;
-	Map<String,String> columnToOrigin = new HashMap<>();
-	
-	public String getPath() {
-		return path;
-	}
-	public void setPath(String path) {
-		this.path = path;
-	}
-	public String getName() {
-		return name;
-	}
-	public void setName(String name) {
-		this.name = name;
-	}
-	public String getTable() {
-		return table;
-	}
-	public void setTable(String table) {
-		this.table = table;
-	}
-	public String getPkName() {
-		return pkName;
-	}
-	public void setPkName(String pkName) {
-		this.pkName = pkName;
-	}
-	public Set<String> getColumns() {
-		return columnToOrigin.keySet();
-	}
-	public void setColumnMapping(Collection<String> columnAlias) {
-		for(String column:columnAlias) {
-			String[] rel_col = column.trim().split(" +");
-			if(rel_col.length == 2) {
-				columnToOrigin.put(rel_col[1], rel_col[0]);
-			}else if(rel_col.length == 1){
-				columnToOrigin.put(rel_col[0], rel_col[0]);
-			}else {
-				OOAssert.warnning("%s 不符合规范", column);
-			}
-		}
-	}
-	
-	public Map<String, String> getColumnToOrigin() {
-		return columnToOrigin;
-	}
-	public void setColumnToOrigin(Map<String, String> columnToOrigin) {
-		this.columnToOrigin = columnToOrigin;
-	}
-	@Override
-	public String toString() {
-		return OOUtils.toJSON(this);
-	}
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((name == null) ? 0 : name.hashCode());
-		result = prime * result + ((path == null) ? 0 : path.hashCode());
-		return result;
-	}
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		DDMeta other = (DDMeta) obj;
-		if (name == null) {
-			if (other.name != null)
-				return false;
-		} else if (!name.equals(other.name))
-			return false;
-		if (path == null) {
-			if (other.path != null)
-				return false;
-		} else if (!path.equals(other.path))
-			return false;
-		return true;
-	}
-
-}
-
-class SqlParamData {
-	DDMeta main;
-	Set<DDMeta> depends;
-	List<String> dependNamePaths;
-	List<DDMeta> supplements;
-	Map<String,DDMeta> namePathToMeta;
-	
-	String sql;
-	public DDMeta getMain() {
-		return main;
-	}
-	public void setMain(DDMeta main) {
-		this.main = main;
-	}
-	public Set<DDMeta> getDepends() {
-		return depends;
-	}
-	public void setDepends(Set<DDMeta> depends) {
-		this.depends = depends;
-	}
-	public List<String> getDependNamePaths() {
-		return dependNamePaths;
-	}
-	public void setDependNamePaths(List<String> dependNamePaths) {
-		this.dependNamePaths = dependNamePaths;
-	}
-	public List<DDMeta> getSupplements() {
-		return supplements;
-	}
-	public void setSupplements(List<DDMeta> supplements) {
-		this.supplements = supplements;
-	}
-	public String getSql() {
-		return sql;
-	}
-	public void setSql(String sql) {
-		this.sql = sql;
-	}
-	public Map<String, DDMeta> getNamePathToMeta() {
-		return namePathToMeta;
-	}
-	public void setNamePathToMeta(Map<String, DDMeta> namePathToMeta) {
-		this.namePathToMeta = namePathToMeta;
-	}
-	@Override
-	public String toString() {
-		return OOUtils.toJSON(this);
 	}
 	
 }
