@@ -191,7 +191,6 @@ public class DDEngine {
 			}
 		}
 		Map<String,DDMeta> namePathToMeta = new HashMap<>();
-
 		Set<DDMeta> depends = new HashSet<>();
 		List<String> dependNamePaths = new ArrayList<>();
 		for(DDMeta meta:set) {
@@ -209,13 +208,12 @@ public class DDEngine {
 				OOAssert.warnning("关系一定有错误，无法推导 %s -> %s", meta,mainPath);	
 			}
 		}
-		List<DDMeta> supplements = new ArrayList<>();
+		Set<DDMeta> supplements = new HashSet<>();
 		for(DDMeta meta:aliasToMeta.values()) {
 			if(!depends.contains(meta)) {
 				supplements.add(meta);
 			}
 		}
-		
 		List<String> supplementNamePaths = new ArrayList<>(supplements.size());
 		for(DDMeta meta:supplements) {
 			Set<DDMeta> spoor = new HashSet<>();
@@ -235,14 +233,10 @@ public class DDEngine {
 		spd.setMain(mainMeta);
 		Collections.sort(dependNamePaths);
 		Collections.sort(supplementNamePaths);
-		List<DDMeta> seqSupplements = new ArrayList<>(supplementNamePaths.size());
-		for(String np:supplementNamePaths) {
-			seqSupplements.add(namePathToMeta.get(np));
-		}
-
 		spd.setDepends(depends);
 		spd.setDependNamePaths(dependNamePaths);
-		spd.setSupplements(seqSupplements);
+		spd.setSupplements(supplements);
+		spd.setSupplementNamePaths(supplementNamePaths);
 		spd.setNamePathToMeta(namePathToMeta);;
 		return spd;
 	}

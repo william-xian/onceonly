@@ -11,9 +11,9 @@ class SqlParamData {
 	DDMeta main;
 	Set<DDMeta> depends;
 	List<String> dependNamePaths;
-	List<DDMeta> supplements;
+	Set<DDMeta> supplements;
+	List<String> supplementNamePaths;
 	Map<String,DDMeta> namePathToMeta;
-	
 	String sql;
 	public DDMeta getMain() {
 		return main;
@@ -33,11 +33,17 @@ class SqlParamData {
 	public void setDependNamePaths(List<String> dependNamePaths) {
 		this.dependNamePaths = dependNamePaths;
 	}
-	public List<DDMeta> getSupplements() {
+	public Set<DDMeta> getSupplements() {
 		return supplements;
 	}
-	public void setSupplements(List<DDMeta> supplements) {
+	public void setSupplements(Set<DDMeta> supplements) {
 		this.supplements = supplements;
+	}
+	public List<String> getSupplementNamePaths() {
+		return supplementNamePaths;
+	}
+	public void setSupplementNamePaths(List<String> supplementNamePaths) {
+		this.supplementNamePaths = supplementNamePaths;
 	}
 	public String getSql() {
 		return sql;
