@@ -12,6 +12,7 @@ import java.util.Set;
 
 import io.onceonly.util.OOAssert;
 import io.onceonly.util.OOUtils;
+import io.onceonly.util.Tuple3;
 
 public class DependDeduceEngine {
 	
@@ -90,17 +91,19 @@ public class DependDeduceEngine {
 			String lastTbl = null;
 			for(int i = 0; i < pathArr.length; i++) {
 				String curTbl = pathArr[i];
-				String tbl = curTbl.replaceAll("\\.>*", "");
+				String tbl = curTbl.replaceAll("\\..*", "");
 				if(tbl.equals(lastTbl)) {
 					List<String> plist = new ArrayList<>();
 					for(int t = 0; t < i; t++) {
 						plist.add(pathArr[t]);
 					}
 					plist.add(tbl);
+					String pkName = pathArr[i-1].replaceAll(".*\\.", "");
 					String npath = String.join("-", plist);
 					if(!pathToMeta.containsKey(npath)) {
 						DDMeta  nmeta = new DDMeta();
 						nmeta.setPath(npath);
+						nmeta.setPkName(pkName);
 						pathToMeta.put(npath, nmeta);	
 					}
 				}
@@ -108,92 +111,160 @@ public class DependDeduceEngine {
 			}
 		}
 	}
-	private String getPathTable(String path) {
-		int indexTbl = path.lastIndexOf('.');
-		if(indexTbl < 0) {
-			return path;
-		}else {
-			return path.substring(0,indexTbl);
-		}
-	}
-	private void resoveDDMeta(DDMeta meta) {
-		String path = meta.getPath();
+
+	
+	private Tuple3<String,String,String> splitPath(String path) {
+		Tuple3<String,String,String> result = new Tuple3<String,String,String>();
 		int sep = path.lastIndexOf('-');
 		if(sep < 0) {
-			/** 没有分割符，说明是命名根  */
-			meta.setTable(path);
-			return;
-		}
-		String a = path.substring(0, sep);
-		String b = path.substring(sep+1);
-		meta.setTable(b.replaceAll("\\..*", ""));
-		
-		DDMeta metaA = pathToMeta.get(a);
-		if(metaA == null && !a.contains("-")) {
-			metaA = pathToMeta.get(getPathTable(a));
-		}
-		if(metaA == null) {
-			OOAssert.fatal("a=%s", a);
-		}
-		//TODO 关系不对
-		Map<String,String> mappingA = relMap.get(metaA.getName());
-		if(mappingA == null) {
-			mappingA = new HashMap<>();
-			relMap.put(metaA.getName(), mappingA);
-		}
-		mappingA.put(meta.getName(), path);
-		
-		Map<String,String> mappingB = relMap.get(meta.getName());
-		if(mappingB == null) {
-			mappingB = new HashMap<>();
-			relMap.put(meta.getName(), mappingB);
-		}
-		mappingB.put(metaA.getName(), path);
-	}
-	public Set<String> generateDenpendTableByParams(String mainAlias,Set<String> params) {
-		Set<String> set = new HashSet<>();		
-		if(params == null || params.isEmpty()) {
-			return set;
-		}
-		for(String column:params) {
-			DDMeta meta = columnToMeta.get(column);
-			if(meta != null) {
-				set.add(meta.getName());
-			}else {
-				OOAssert.warnning("列 %s 不存在", column);	
-			}
-		}
-		Set<String> result = new HashSet<>();
-		for(String alias:set) {
-			if(result.contains(alias)) { // 在某个关系链中
-				continue;
-			}
-			Set<String> spoor = new HashSet<>();
-			List<String> path = new ArrayList<>();
-			if(search(spoor,path,alias,mainAlias)) {
-				result.addAll(path);
-			}else {
-				OOAssert.warnning("关系一定有错误，无法推导 %s -> %s", alias,mainAlias);	
-			}
+			result.a = path;
+		}else {
+			String rel = path.substring(0, sep);
+			int rSep = rel.lastIndexOf('.');
+			result.a = path.substring(0, rSep);
+			result.b = path.substring(sep+1);
+			result.c = path.substring(rSep+1,sep);
 		}
 		return result;
 	}
 	
-	public boolean search(Set<String> spoor,List<String> path,String src,String dest) {
+	private void resoveDDMeta(DDMeta meta) {
+		Tuple3<String,String,String> tbls = splitPath(meta.getPath());
+		if(tbls.a != null && tbls.b == null) {
+			meta.setTable(tbls.a);
+			return;
+		}else {
+			meta.setTable(tbls.b.replaceAll("\\..*", ""));	
+		}
+		DDMeta metaA = pathToMeta.get(tbls.a);
+		if(meta.getPkName() != null) {
+			/** 是中间表  */
+			tbls = splitPath(tbls.a);
+			metaA = pathToMeta.get(tbls.a);
+		}
+		if(metaA != null) {
+			String rel = String.format("%s.%s = %s.%s", metaA.getName(),tbls.c,meta.getName(),meta.getPkName()==null?"id":meta.getPkName());
+			saveRelation(rel,meta,metaA);
+		}else {
+			OOAssert.fatal("不可能,%s 对到错误", meta.getPath());
+		}
+	}
+	private void saveRelation(String relation,DDMeta a,DDMeta b) {
+		Map<String,String> mappingA = relMap.get(a.getName());
+		if(mappingA == null) {
+			mappingA = new HashMap<>();
+			relMap.put(a.getName(), mappingA);
+		}
+		mappingA.put(b.getName(), relation);
+		Map<String,String> mappingB = relMap.get(b.getName());
+		if(mappingB == null) {
+			mappingB = new HashMap<>();
+			relMap.put(b.getName(), mappingB);
+		}
+		mappingB.put(a.getName(), relation);
+	}
+
+	/**
+	 * 根据主表和相关参数 推倒出依赖的相关表
+	 * @param mainEntity
+	 * @param params
+	 * @return
+	 */
+	public SqlParamData deduceDependByParams(String mainPath,Set<String> params) {
+		DDMeta mainMeta = pathToMeta.get(mainPath);
+		SqlParamData spd = new SqlParamData();
+		if(mainMeta == null) {
+			OOAssert.warnning("%s 不存在", mainPath);
+		}
+		Set<DDMeta> set = new HashSet<>();		
+		if(params != null && !params.isEmpty()) {
+			for(String column:params) {
+				DDMeta meta = columnToMeta.get(column);
+				if(meta != null) {
+					set.add(meta);
+				}else {
+					OOAssert.warnning("列 %s 不存在", column);	
+				}
+			}
+		}
+		Map<String,DDMeta> namePathToMeta = new HashMap<>();
+
+		Set<DDMeta> depends = new HashSet<>();
+		List<String> dependNamePaths = new ArrayList<>();
+		//TODO 三重以上推倒关系需要要转换成两两转换关系
+		for(DDMeta meta:set) {
+			Set<DDMeta> spoor = new HashSet<>();
+			List<DDMeta> path = new ArrayList<>();
+			if(search(spoor,path,meta,mainMeta)) {
+				depends.addAll(path);
+				StringBuffer namepath = new StringBuffer();
+				for(int i = path.size() -1 ; i >=0; i--) {
+					namepath.append(path.get(i).getName()+"-");
+				}
+				namePathToMeta.put(namepath.toString(), meta);
+				dependNamePaths.add(namepath.toString());
+			}else {
+				OOAssert.warnning("关系一定有错误，无法推导 %s -> %s", meta,mainPath);	
+			}
+		}
+		List<DDMeta> supplements = new ArrayList<>();
+		for(DDMeta meta:aliasToMeta.values()) {
+			if(!depends.contains(meta)) {
+				supplements.add(meta);
+			}
+		}
+		
+		List<String> supplementNamePaths = new ArrayList<>(supplements.size());
+		//TODO 三重以上推倒关系需要要转换成两两转换关系
+		for(DDMeta meta:supplements) {
+			Set<DDMeta> spoor = new HashSet<>();
+			List<DDMeta> path = new ArrayList<>();
+			if(search(spoor,path,meta,mainMeta)) {
+				StringBuffer namepath = new StringBuffer();
+				for(int i = path.size() -1 ; i >=0; i--) {
+					namepath.append(path.get(i).getName()+"-");
+				}
+				namepath.delete(namepath.length()-1, namepath.length());
+				namePathToMeta.put(namepath.toString(), meta);
+				supplementNamePaths.add(namepath.toString());
+			}else {
+				OOAssert.warnning("关系一定有错误，无法推导 %s -> %s", meta,mainPath);	
+			}
+		}
+		spd.setMain(mainMeta);
+		Collections.sort(dependNamePaths);
+		Collections.sort(supplementNamePaths);
+		List<DDMeta> seqSupplements = new ArrayList<>(supplementNamePaths.size());
+		for(String np:supplementNamePaths) {
+			seqSupplements.add(namePathToMeta.get(np));
+		}
+
+		spd.setDepends(depends);
+		spd.setDependNamePaths(dependNamePaths);
+		spd.setSupplements(seqSupplements);
+		spd.setNamePathToMeta(namePathToMeta);;
+		return spd;
+	}
+	/** 
+	 * 寻找足迹
+	 */
+	public boolean search(Set<DDMeta> spoor,List<DDMeta> path,DDMeta src,DDMeta dest) {
 		if(spoor.contains(src)) {
 			return false;
 		}
-		Map<String,String> map = relMap.get(src);
+		Map<String,String> map = relMap.get(src.getName());
 		if(map == null) {
 			return false;
 		}
 		path.add(src);
 		spoor.add(src);
-		if(map.containsKey(dest)) {
+		if(map.containsKey(dest.getName())) {
+			path.add(dest);
 			return true;
 		}else  {
 			for(String subSrc:map.keySet()) {
-				if(search(spoor,path,subSrc,dest)) {
+				DDMeta subMeta = aliasToMeta.get(subSrc);
+				if(search(spoor,path,subMeta,dest)) {
 					return true;
 				}
 			}
@@ -202,83 +273,179 @@ public class DependDeduceEngine {
 	}
 	
 	
-	/**
-	 * 主表和关联参数，生成一个SQL的join部分
-	 * @param mainEntity
-	 */
-	public void generateJoinSql(String mainEntity,Set<String> params) {
-		DDMeta mainMeta = pathToMeta.get(mainEntity);
-		if(mainMeta == null) {
-			OOAssert.warnning("% 不存在", mainEntity);
-		}
-		String mainAlias = mainMeta.getName();
-		Set<String> classes = generateDenpendTableByParams(mainAlias, params);
-		
-		for(String clazz:classes) {
-			System.out.println(aliasToMeta.get(clazz).getPath());
-		}
-		
-		Set<String> columns = new HashSet<>();
-		Set<String> missColumns = new HashSet<>();
-		for(DDMeta meta:aliasToMeta.values()) {
-			if(classes.contains(meta.getName())) {
-				columns.addAll(meta.getColumns());
-			}else {
-				missColumns.addAll(meta.getColumns());
+	public void genSql(SqlParamData data) {
+		DDMeta mainMeta = data.getMain();
+		Set<DDMeta> depends = data.getDepends();
+		List<String> dnps = data.getDependNamePaths();
+		depends.add(mainMeta);
+		StringBuffer sql = new StringBuffer("select ");
+		for(DDMeta meta:depends) {
+			Map<String,String> c2o = meta.getColumnToOrigin();
+			for(String column:c2o.keySet()) {
+				sql.append(String.format("%s.%s %s, ", meta.getName(),c2o.get(column),column));
 			}
 		}
+		//删除最后两个字符：逗号空格
+		sql.delete(sql.length()-2, sql.length());
+		sql.append(String.format("\nfrom %s %s", mainMeta.getTable(), mainMeta.getName()));
+		if(dnps != null && !dnps.isEmpty()) {
+			for(String dnp:dnps) {
+				String[] deps = dnp.split("-");
+				String depend = deps[0];
+				for(int i = 1; i < deps.length; i++) {
+					DDMeta meta = aliasToMeta.get(deps[i]);
+					DDMeta dependMeta  = aliasToMeta.get(depend);
+					String rel = relMap.get(meta.getName()).get(dependMeta.getName());
+					sql.append(String.format("\nleft join %s %s on %s", meta.getTable(),meta.getName(),rel));
+					depend = deps[i];
+				}
+				
+			}
+				
+		}
 		
+		data.setSql(sql.toString());
 	}
 	
-	class DDMeta {
-		String path;
-		String name;
-		String table;
-		Map<String,String> columnMapping = new HashMap<>();
-		
-		public String getPath() {
-			return path;
-		}
-		public void setPath(String path) {
-			this.path = path;
-		}
-		public String getName() {
-			return name;
-		}
-		public void setName(String name) {
-			this.name = name;
-		}
-		public String getTable() {
-			return table;
-		}
-		public void setTable(String table) {
-			this.table = table;
-		}
-		public Set<String> getColumns() {
-			return columnMapping.keySet();
-		}
-		public void setColumnMapping(Collection<String> columnAlias) {
-			for(String column:columnAlias) {
-				String[] rel_col = column.trim().split(" +");
-				if(rel_col.length == 2) {
-					columnMapping.put(rel_col[1], rel_col[0]);
-				}else if(rel_col.length == 1){
-					columnMapping.put(rel_col[0], rel_col[0]);
-				}else {
-					OOAssert.warnning("%s 不符合规范", column);
-				}
+}
+
+
+class DDMeta {
+	String path;
+	String name;
+	String table;
+	String pkName;
+	Map<String,String> columnToOrigin = new HashMap<>();
+	
+	public String getPath() {
+		return path;
+	}
+	public void setPath(String path) {
+		this.path = path;
+	}
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public String getTable() {
+		return table;
+	}
+	public void setTable(String table) {
+		this.table = table;
+	}
+	public String getPkName() {
+		return pkName;
+	}
+	public void setPkName(String pkName) {
+		this.pkName = pkName;
+	}
+	public Set<String> getColumns() {
+		return columnToOrigin.keySet();
+	}
+	public void setColumnMapping(Collection<String> columnAlias) {
+		for(String column:columnAlias) {
+			String[] rel_col = column.trim().split(" +");
+			if(rel_col.length == 2) {
+				columnToOrigin.put(rel_col[1], rel_col[0]);
+			}else if(rel_col.length == 1){
+				columnToOrigin.put(rel_col[0], rel_col[0]);
+			}else {
+				OOAssert.warnning("%s 不符合规范", column);
 			}
 		}
-		public Map<String, String> getColumnMapping() {
-			return columnMapping;
-		}
-		public void setColumnMapping(Map<String, String> columnMapping) {
-			this.columnMapping = columnMapping;
-		}
-		@Override
-		public String toString() {
-			return OOUtils.toJSON(this);
-		}
-		
 	}
+	
+	public Map<String, String> getColumnToOrigin() {
+		return columnToOrigin;
+	}
+	public void setColumnToOrigin(Map<String, String> columnToOrigin) {
+		this.columnToOrigin = columnToOrigin;
+	}
+	@Override
+	public String toString() {
+		return OOUtils.toJSON(this);
+	}
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((name == null) ? 0 : name.hashCode());
+		result = prime * result + ((path == null) ? 0 : path.hashCode());
+		return result;
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		DDMeta other = (DDMeta) obj;
+		if (name == null) {
+			if (other.name != null)
+				return false;
+		} else if (!name.equals(other.name))
+			return false;
+		if (path == null) {
+			if (other.path != null)
+				return false;
+		} else if (!path.equals(other.path))
+			return false;
+		return true;
+	}
+
+}
+
+class SqlParamData {
+	DDMeta main;
+	Set<DDMeta> depends;
+	List<String> dependNamePaths;
+	List<DDMeta> supplements;
+	Map<String,DDMeta> namePathToMeta;
+	
+	String sql;
+	public DDMeta getMain() {
+		return main;
+	}
+	public void setMain(DDMeta main) {
+		this.main = main;
+	}
+	public Set<DDMeta> getDepends() {
+		return depends;
+	}
+	public void setDepends(Set<DDMeta> depends) {
+		this.depends = depends;
+	}
+	public List<String> getDependNamePaths() {
+		return dependNamePaths;
+	}
+	public void setDependNamePaths(List<String> dependNamePaths) {
+		this.dependNamePaths = dependNamePaths;
+	}
+	public List<DDMeta> getSupplements() {
+		return supplements;
+	}
+	public void setSupplements(List<DDMeta> supplements) {
+		this.supplements = supplements;
+	}
+	public String getSql() {
+		return sql;
+	}
+	public void setSql(String sql) {
+		this.sql = sql;
+	}
+	public Map<String, DDMeta> getNamePathToMeta() {
+		return namePathToMeta;
+	}
+	public void setNamePathToMeta(Map<String, DDMeta> namePathToMeta) {
+		this.namePathToMeta = namePathToMeta;
+	}
+	@Override
+	public String toString() {
+		return OOUtils.toJSON(this);
+	}
+	
 }

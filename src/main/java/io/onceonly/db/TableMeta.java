@@ -201,7 +201,7 @@ public class TableMeta {
 	/**
 	 * 
 	 * @param tableToEntity
-	 * @param columnToOriginal
+	 * @param columnToOrigin
 	 * @param denpends
 	 * @param params
 	 * @return
