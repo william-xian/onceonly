@@ -4,7 +4,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 
 import io.onceonly.db.BaseEntity;
-import io.onceonly.db.annotation.RefFrom;
+import io.onceonly.db.annotation.Ref;
 
 @Entity
 public class GoodsShipping extends BaseEntity {
@@ -12,13 +12,13 @@ public class GoodsShipping extends BaseEntity {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	@RefFrom(entity=GoodsOrder.class)
+	@Ref(entity=GoodsOrder.class)
 	@Column(nullable = false)
 	private long goodsOrderId;
 	@Column(nullable = false)
-	@RefFrom(entity=UserChief.class,alias="buyer")
+	@Ref(entity=UserChief.class)
 	private long buyerId;
-	@RefFrom(entity=UserChief.class,alias="receiver")
+	@Ref(entity=UserChief.class)
 	@Column(nullable = false)
 	private long receiverId;
 	@Column(length = 255)

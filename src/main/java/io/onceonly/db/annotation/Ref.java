@@ -11,9 +11,10 @@ import java.lang.annotation.Target;
 @Target({METHOD, FIELD})
 @Retention(RUNTIME)
 @Documented
-public @interface RefFrom {
+public @interface Ref {
     Class<?> entity();
-    String alias() default "";
+    /** 使用该子段是必须使用该entity的主键  */
+    String fieldName() default "";
     /** 使用外键  */
     boolean useFK() default true;
 }

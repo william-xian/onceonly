@@ -4,7 +4,7 @@ import javax.persistence.Column;
 import javax.persistence.Entity;
 
 import io.onceonly.db.BaseEntity;
-import io.onceonly.db.annotation.RefFrom;
+import io.onceonly.db.annotation.Ref;
 
 @Entity
 public class UserFriend extends BaseEntity{
@@ -15,9 +15,9 @@ public class UserFriend extends BaseEntity{
 	private static final long serialVersionUID = 1L;
 
 	@Column(nullable = false)
-	@RefFrom(entity=UserChief.class,alias="user")
+	@Ref(entity=UserChief.class)
 	private Long userId;
-	@RefFrom(entity=UserChief.class,alias="friend")
+	@Ref(entity=UserChief.class)
 	@Column(nullable = false)
 	private Long friendId;
 	public Long getUserId() {
