@@ -15,6 +15,9 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
+import io.onceonly.db.annotation.Col;
+import io.onceonly.db.annotation.OId;
+
 /**
  * @author Administrator
  *
@@ -29,9 +32,11 @@ public class BaseEntity implements Serializable{
 	private static final long serialVersionUID = 1L;
 	@Id @GeneratedValue(strategy = GenerationType.TABLE)  
     @Column(nullable = false, length=32)
+	@OId
 	protected Long id;
 	@JsonIgnore
     @Column(nullable = false)
+    @Col(nullable = false)
     private boolean _del = false;
 	
 	public Long getId() {
