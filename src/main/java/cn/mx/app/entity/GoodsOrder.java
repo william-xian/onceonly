@@ -1,12 +1,11 @@
 package cn.mx.app.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-
 import io.onceonly.db.BaseEntity;
+import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Ref;
+import io.onceonly.db.annotation.Tbl;
 
-@Entity
+@Tbl
 public class GoodsOrder extends BaseEntity{
 	/**
 	 * 
@@ -14,16 +13,14 @@ public class GoodsOrder extends BaseEntity{
 	private static final long serialVersionUID = 1L;
 
 	@Ref(entity=UserChief.class)
-	@Column(nullable = false)
 	private long userId;
-	@Column(nullable = false)
-	@Ref(entity=Goods.class)
+	@Ref(entity=Goods.class,nullable = false)
 	private long goodsId;
-	@Column(nullable = false)
+	@Col(nullable = false)
 	private Integer amount;
-	@Column(nullable = false)
+	@Col(nullable = false)
 	private Integer money;
-	@Column(nullable = false)
+	@Col(nullable = false)
 	private Long ctime;
 	public long getUserId() {
 		return userId;

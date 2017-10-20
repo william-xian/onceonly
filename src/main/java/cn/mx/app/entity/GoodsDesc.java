@@ -1,22 +1,19 @@
 package cn.mx.app.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-
 import io.onceonly.db.BaseEntity;
-import io.onceonly.db.annotation.Extend;
+import io.onceonly.db.annotation.Col;
+import io.onceonly.db.annotation.Tbl;
 
-@Entity
-@Extend(entity=Goods.class)
+@Tbl(extend=Goods.class)
 public class GoodsDesc extends BaseEntity{
 
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	@Column(length = 255,nullable = true)
+	@Col(length = 255,nullable = true)
 	private String content;
-	@Column(nullable = false)
+	@Col(nullable = false)
 	private Integer saled;
 	public String getContent() {
 		return content;

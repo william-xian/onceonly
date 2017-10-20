@@ -17,4 +17,6 @@ public @interface Ref {
     String fieldName() default "";
     /** 使用外键  */
     boolean useFK() default true;
+    
+    boolean nullable() default false;
 }

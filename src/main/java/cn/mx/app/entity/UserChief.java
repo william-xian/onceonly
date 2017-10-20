@@ -1,24 +1,24 @@
 package cn.mx.app.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-
 import io.onceonly.db.BaseEntity;
+import io.onceonly.db.annotation.Col;
+import io.onceonly.db.annotation.Tbl;
 
-@Entity
+@Tbl
 public class UserChief extends BaseEntity{
     /**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-    @Column(nullable = false, length=32,unique=true)
+    @Col(nullable = false, length=32,unique=true)
 	private String name;
-    @Column(nullable = true, length=64)
+    @Col(nullable = true, length=64)
     private String passwd;
-    @Column(nullable = true, length=255)
+    @Col(nullable = true, length=255)
     private String avatar;
-    @Column(nullable = true, length=255)
+    @Col(nullable = true, length=255)
     private Integer genre;
+    
 	public String getName() {
 		return name;
 	}

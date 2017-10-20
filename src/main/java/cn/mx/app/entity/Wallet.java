@@ -1,23 +1,21 @@
 package cn.mx.app.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-
 import io.onceonly.db.BaseEntity;
-import io.onceonly.db.annotation.Extend;
+import io.onceonly.db.annotation.Col;
+import io.onceonly.db.annotation.Tbl;
 
-@Entity
-@Extend(entity=UserChief.class,autoCreate=true)
+
+@Tbl(extend=UserChief.class,autoCreate=true)
 public class Wallet extends BaseEntity{
     /**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-    @Column(nullable = true)
+    @Col(nullable = true)
 	private int balance;
-    @Column(nullable = true)
+    @Col(nullable = true)
 	private int expenditure;
-    @Column(nullable = true)
+    @Col(nullable = true)
 	private int income;
 	public int getBalance() {
 		return balance;

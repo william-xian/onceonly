@@ -1,27 +1,23 @@
 package cn.mx.app.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-
 import io.onceonly.db.BaseEntity;
+import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Ref;
+import io.onceonly.db.annotation.Tbl;
 
-@Entity
+@Tbl
 public class GoodsShipping extends BaseEntity {
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	@Ref(entity=GoodsOrder.class)
-	@Column(nullable = false)
+	@Ref(entity=GoodsOrder.class, nullable = false)
 	private long goodsOrderId;
-	@Column(nullable = false)
-	@Ref(entity=UserChief.class)
+	@Ref(entity=UserChief.class,nullable = false)
 	private long buyerId;
-	@Ref(entity=UserChief.class)
-	@Column(nullable = false)
+	@Ref(entity=UserChief.class,nullable = false)
 	private long receiverId;
-	@Column(length = 255)
+	@Col(length = 255)
 	private String addr;
 	
 	public long getGoodsOrderId() {

@@ -1,11 +1,10 @@
 package cn.mx.app.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-
 import io.onceonly.db.BaseEntity;
+import io.onceonly.db.annotation.Col;
+import io.onceonly.db.annotation.Tbl;
 
-@Entity
+@Tbl
 public class ReqLog extends BaseEntity{
 
 	/**
@@ -13,23 +12,23 @@ public class ReqLog extends BaseEntity{
 	 */
 	private static final long serialVersionUID = 1L;
 
-	@Column(length = 255,nullable = true)
+	@Col(length = 255,nullable = true)
 	private String curUser;
-	@Column(length = 8,columnDefinition="varchar(8) default ''",nullable = false)
+	@Col(length = 8,colDef="varchar(8) default ''",nullable = false)
 	private String method;
-	@Column(length = 255,nullable = true)
+	@Col(length = 255,nullable = true)
 	private String params;
-	@Column(length = 16,nullable = true)
+	@Col(length = 16,nullable = true)
 	private String remoteAddr;
-	@Column(length = 32,nullable = true)
+	@Col(length = 32,nullable = true)
 	private String sessionId;
-	@Column(length = 255,nullable = true)
+	@Col(length = 255,nullable = true)
 	private String uri;
-	@Column(nullable = false)
+	@Col(nullable = false)
 	private Long beginTime;
-	@Column(nullable = false)
+	@Col(nullable = false)
 	private Long requestTime;
-	@Column(columnDefinition="TEXT",nullable = true) 
+	@Col(colDef="TEXT",nullable = true) 
 	private String result;
 	public String getCurUser() {
 		return curUser;

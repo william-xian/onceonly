@@ -1,21 +1,20 @@
 package cn.mx.app.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-
 import io.onceonly.db.BaseEntity;
+import io.onceonly.db.annotation.Col;
+import io.onceonly.db.annotation.Tbl;
 
-@Entity
+@Tbl
 public class Goods extends BaseEntity{
 	/**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
 	
-	@Column(length = 32,nullable = true)
+	@Col(length = 32,nullable = true)
 	private String name;
 	
-	@Column(nullable = true)
+	@Col(nullable = true)
 	private Integer genre;
 	
 	public String getName() {

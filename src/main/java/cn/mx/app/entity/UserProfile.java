@@ -1,23 +1,20 @@
 package cn.mx.app.entity;
 
-import javax.persistence.Column;
-import javax.persistence.Entity;
-
 import io.onceonly.db.BaseEntity;
-import io.onceonly.db.annotation.Extend;
+import io.onceonly.db.annotation.Col;
+import io.onceonly.db.annotation.Tbl;
 
-@Entity
-@Extend(entity=UserChief.class)
+@Tbl(extend=UserChief.class)
 public class UserProfile extends BaseEntity{
     /**
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-    @Column(nullable = false, length=20)
+    @Col(nullable = false, length=20)
 	private String nickname;
-    @Column(nullable = false)
+    @Col(nullable = false)
 	private Boolean gender;
-    @Column(nullable = false, length=16)
+    @Col(nullable = false, length=16)
 	private String phone;
 	public String getNickname() {
 		return nickname;
