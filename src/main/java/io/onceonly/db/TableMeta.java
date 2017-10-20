@@ -1,10 +1,14 @@
 package io.onceonly.db;
 
+import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 public class TableMeta {
 	String table;
+	/** 复合主键以逗号隔开不可有空格*/
 	String primaryKey;
 	List<String[]> uniqueConstraint;
 	Map<String,ColumnMeta> columnMeta;
@@ -23,7 +27,7 @@ public class TableMeta {
 			tbl.append(String.format("CONSTRAINT %s_%s UNIQUE (%s)",table,String.join("_", tuple),String.join(",", tuple)));
 		}
 		if(primaryKey != null) {
-			tbl.append("PRIMARY Key id,");	
+			tbl.append(String.format("PRIMARY Key (%s),",primaryKey));	
 		}
 		tbl.append(FKs.toString());
 		tbl.delete(tbl.length()-1, tbl.length());
@@ -38,8 +42,54 @@ public class TableMeta {
 	 * @return
 	 */
 	public String upgradeTo(TableMeta other) {
+		if(!table.equals(other.table)) {
+			return null;
+		}
 		StringBuffer sql = new StringBuffer();
-		return sql.toString();
+		if(primaryKey != null && primaryKey.equals(other.primaryKey)) {
+			sql.append(String.format("alter table %s drop constraint %;",table,primaryKey.replace(',', '_')));
+		}
+		if(other.primaryKey != null && other.primaryKey.equals(primaryKey)) {
+			sql.append(String.format("alter table %s add constraint %s primary key (%s);",table,other.primaryKey.replace(',', '_'),other.primaryKey));
+		}
+		Map<String,ColumnMeta> otherColumn = other.columnMeta;
+		for(ColumnMeta ocm:otherColumn.values()) {
+			ColumnMeta cm = columnMeta.get(ocm.name);
+			if(cm == null) {
+				sql.append(String.format("alter table %s add %s %s%s%s;",table, ocm.name,ocm.type, ocm.nullable?"":" not null",ocm.unique?" unique":""));
+				if(ocm.useFK && ocm.refTable !=null){
+					sql.append(String.format("ALTER TABLE %s ADD CONSTRAINT fk_%s FOREIGN KEY (%s) REFERENCES %s(%s);",table,ocm.name,ocm.name,ocm.refTable,ocm.name));
+				}
+			}else {
+				//需要删除约束 TODO
+				if(cm.unique &&!ocm.unique) {
+					sql.append(String.format("alter table %s drop constraint %s;",table, ocm.name));		
+				}
+				//TODO
+				if(cm.useFK && !ocm.useFK) {
+				}
+				if(!cm.type.equals(ocm.type) || cm.nullable != ocm.nullable) {
+					sql.append(String.format("alter table %s alter %s %s%s%s;",table, ocm.name,ocm.type, ocm.nullable?"":" not null",ocm.unique?" unique":""));	
+				}
+				if(!cm.useFK && ocm.useFK) {
+					if(ocm.useFK && ocm.refTable !=null){
+						sql.append(String.format("ALTER TABLE %s ADD CONSTRAINT fk_%s FOREIGN KEY (%s) REFERENCES %s(%s);",table,ocm.name,ocm.name,ocm.refTable,ocm.name));
+					}
+				}
+			}
+		}
+		Set<String> old= new HashSet<String>();
+		for(String[] tuple:uniqueConstraint) {
+			List<String> temp = Arrays.asList(tuple);
+			old.add(String.join(",", temp));
+		}
+		for(String[] tuple:other.uniqueConstraint) {
+			List<String> temp = Arrays.asList(tuple);
+			if(!old.contains(String.join(",", temp))){
+				sql.append(String.format("CONSTRAINT %s_%s UNIQUE (%s)",table,String.join("_", tuple),String.join(",", tuple)));		
+			}
+		}
+		return sql.length() == 0 ? null:sql.toString();
 	}
 	/**
 	 * TODO
