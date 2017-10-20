@@ -284,11 +284,16 @@ public class DDEngine {
 		sql.delete(sql.length()-2, sql.length());
 		sql.append(String.format("\nfrom %s %s", mainMeta.getTable(), mainMeta.getName()));
 		if(dnps != null && !dnps.isEmpty()) {
+			Set<String> spoor = new HashSet<>();
+			spoor.add(mainMeta.getName());
 			for(String dnp:dnps) {
 				String[] deps = dnp.split("-");
 				String depend = deps[0];
 				for(int i = 1; i < deps.length; i++) {
 					DDMeta meta = aliasToMeta.get(deps[i]);
+					/** 如果存在中间表去除重复 */
+					if(spoor.contains(meta.name)) continue;
+					spoor.add(meta.name);
 					DDMeta dependMeta  = aliasToMeta.get(depend);
 					String rel = relMap.get(meta.getName()).get(dependMeta.getName());
 					sql.append(String.format("\nleft join %s %s on %s", meta.getTable(),meta.getName(),rel));

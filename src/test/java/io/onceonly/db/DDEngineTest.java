@@ -1,6 +1,11 @@
 package io.onceonly.db;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.junit.Test;
+
+import io.onceonly.util.OOUtils;
 
 public class DDEngineTest {
 
@@ -19,8 +24,28 @@ public class DDEngineTest {
 	left join UserAddr ua on go.userId = ua.id
 	left join Goods g on g.id = go.goodsId
 	left join GoodsDesc gd on go.goodsId = gd.id
-	left join GoodsShipping gs on go.goodsOrderId = go.id
-	"
+	left join GoodsShipping gs on go.goodsOrderId = gs.id
+	"*/
+	@Test
+	public void testJoin() {
+		DDEngine dde = new DDEngine();
+		dde.append("GoodsOrder {ctime};")
+		.append("GoodsOrder.userId-User {id userId,name username};")
+		.append("GoodsOrder.userId-UserAddr {addr};")
+		.append("GoodsOrder.goodsId-Goods {name goodsName};")
+		.append("GoodsOrder.goodsId-GoodsDesc {saled,content};")
+		.append("GoodsOrder.goodsOrderId-GoodsShipping {goodsOrderId,receiverId,addr receiverAddr};")
+			.build();
+		System.out.println(OOUtils.toJSON(dde));
+		Set<String> params = new HashSet<String>();
+		params.add("content");
+		params.add("receiverAddr");
+		SqlParamData spd = dde.deduceDependByParams("GoodsOrder.goodsOrderId-GoodsShipping", params);
+		System.out.println(spd);
+		dde.generateSql(spd);
+		System.out.println(spd.getSql());
+	}
+	/**
 	2.在情人节，收到两位以上好友的礼物用户，好友是谁？
 	"select gs.userId, u.name user, g.name goodsName,group_concat(uf.name)friends
 	from GoodsShipping gs
@@ -31,7 +56,20 @@ public class DDEngineTest {
 	"
 	*/
 	@Test
-	public void params() {
+	public void testJoin1() {
+		DDEngine dde = new DDEngine();
+		dde.append("O {uid, gid};")
+		.append("O.uid-U {name uame, age};")
+		.append("O.gid-G {name gname};")
+		.append("O.uid-R.uid-R.fid-U {name fname,age fage};")
+			.build();
+		System.out.println(OOUtils.toJSON(dde));
+		Set<String> params = new HashSet<String>();
+		params.add("fname");
+		SqlParamData spd = dde.deduceDependByParams("O", params);
+		System.out.println(spd);
+		dde.generateSql(spd);
+		System.out.println(spd.getSql());
 	}
 	
 }
