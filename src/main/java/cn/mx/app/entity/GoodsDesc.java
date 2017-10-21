@@ -11,7 +11,7 @@ public class GoodsDesc extends BaseEntity{
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	@Col(length = 255,nullable = true)
+	@Col(size = 255,nullable = true)
 	private String content;
 	@Col(nullable = false)
 	private Integer saled;

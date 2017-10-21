@@ -2,7 +2,6 @@ package cn.mx.app.entity;
 
 import io.onceonly.db.BaseEntity;
 import io.onceonly.db.annotation.Col;
-import io.onceonly.db.annotation.Ref;
 import io.onceonly.db.annotation.Tbl;
 
 @Tbl
@@ -11,13 +10,13 @@ public class GoodsShipping extends BaseEntity {
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-	@Ref(entity=GoodsOrder.class, nullable = false)
+	@Col(ref=GoodsOrder.class, nullable = false)
 	private long goodsOrderId;
-	@Ref(entity=UserChief.class,nullable = false)
+	@Col(ref=UserChief.class,nullable = false)
 	private long buyerId;
-	@Ref(entity=UserChief.class,nullable = false)
+	@Col(ref=UserChief.class,nullable = false)
 	private long receiverId;
-	@Col(length = 255)
+	@Col(size = 255)
 	private String addr;
 	
 	public long getGoodsOrderId() {

@@ -1,11 +1,20 @@
 package io.onceonly.db;
 
+import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import io.onceonly.db.annotation.Col;
+import io.onceonly.db.annotation.Constraint;
+import io.onceonly.db.annotation.OId;
+import io.onceonly.db.annotation.Tbl;
 
 public class TableMeta {
 	String table;
@@ -14,7 +23,33 @@ public class TableMeta {
 	List<String[]> uniqueConstraint;
 	List<ConstraintMeta> constraints;
 	Map<String,ColumnMeta> columnMeta;
-	
+	public String getTable() {
+		return table;
+	}
+	public void setTable(String table) {
+		this.table = table;
+	}
+	public String getPrimaryKey() {
+		return primaryKey;
+	}
+	public void setPrimaryKey(String primaryKey) {
+		this.primaryKey = primaryKey;
+	}
+	public List<ConstraintMeta> getConstraints() {
+		return constraints;
+	}
+	public void setConstraints(List<ConstraintMeta> constraints) {
+		this.constraints = constraints;
+	}
+	public Map<String, ColumnMeta> getColumnMeta() {
+		return columnMeta;
+	}
+	public void setColumnMetas(Collection<ColumnMeta> columnMetas) {
+		this.columnMeta = new HashMap<>(columnMetas.size());
+		for(ColumnMeta cm:columnMetas) {
+			this.columnMeta.put(cm.name, cm);
+		}
+	}
 	private String addPrimaryKeySql(String primaryKey) {
 		StringBuffer sql = new StringBuffer();
 		sql.append(String.format("ALTER TABLE %s DROP CONSTRAINT %s;",table,primaryKey.replace(',', '_')));
@@ -192,52 +227,84 @@ public class TableMeta {
 		StringBuffer sql = new StringBuffer();
 		return sql.toString();
 	}
-}
-
-class ColumnMeta {
-	String name;
-	String type;
-	boolean nullable;
-	boolean unique;
-	String refTable;
-	boolean useFK;
-	String using;
-	/**
-	 * 正则表达式 或@JSON,@Email等特定教研
-	 */
-	String pattern;
-}
-
-
-class ConstraintMeta {
-	String name;
-	static final String PRIMARY_KEY = "PRIMARY KEY";
-	static final String FOREIGN_KEY = "FOREIGN KEY";
-	static final String UNIQUE = "UNIQUE";
-	static final String INDEX = "INDEX";
-	String type;
-	String using;
-	String table;
-	String refTable;
-	List<String> columns;
-}
-
-/* TODO
-ALTER TABLE Persons	ADD CONSTRAINT pk_PersonID PRIMARY KEY (Id_P,LastName)
-ALTER TABLE Orders  ADD CONSTRAINT fk_PerOrders FOREIGN KEY (Id_P) REFERENCES Persons(Id_P);
-ALTER TABLE Persons ADD CONSTRAINT uc_PersonID UNIQUE (Id_P,LastName)
-CREATE INDEX index_name ON table_name (column_name)
-CREATE INDEX name ON table USING HASH (column);
-CREATE UNIQUE INDEX name ON table (column [, ...]);
-ALTER TABLE Persons DROP CONSTRAINT pk_PersonID
-ALTER TABLE Persons DROP CONSTRAINT uc_PersonID
-ALTER TABLE table_name DROP INDEX index_name
-*/
-class AlterSqlTask {
-	int order;
-	String opt;
-	ConstraintMeta cm;
-	String toSql() {
+	public static TableMeta createBy(Class<?> entity) {
+		Tbl tbl = entity.getAnnotation(Tbl.class);
+		if(tbl == null) {
+			return null;
+		}
+		TableMeta tm = new TableMeta();
+		tm.table = entity.getSimpleName();
+		List<ConstraintMeta> constraints =  new ArrayList<>();
+		for(Constraint c:tbl.constraints()) {
+			ConstraintMeta cm = new ConstraintMeta();
+			constraints.add(cm);
+			cm.setColumns(Arrays.asList(c.colNames()));
+			cm.setTable(tm.getTable());
+			cm.setType(c.type());
+			cm.setUsing(c.using());
+		}
+		tm.setConstraints(constraints);
+		List<ColumnMeta> columnMetas = new ArrayList<>();
+		List<String> primaryKeys = new ArrayList<>();
+		for(Class<?> clazz = entity;!clazz.equals(Object.class);clazz=clazz.getSuperclass()) {
+		for(Field field:clazz.getDeclaredFields()) {
+			Col col = field.getAnnotation(Col.class);
+			if (col == null) {
+				continue;
+			}
+			ColumnMeta cm = new ColumnMeta();
+			cm.setName(field.getName());
+			OId oid = field.getAnnotation(OId.class);
+			if(oid != null) {
+				primaryKeys.add(field.getName());
+			}
+			cm.setNullable(col.nullable());
+				cm.setPattern(col.pattern());
+				if (col.colDef().equals("")) {
+					String type = transType(field, col);
+					if (type != null) {
+						cm.setType(type);
+					} else {
+						continue;
+					}
+				} else {
+					cm.setType(col.colDef());
+				}
+				cm.setUnique(col.unique());
+				cm.setUsing(col.using());
+				if (col.ref() != void.class) {
+					cm.setUseFK(col.useFK());
+					cm.setRefTable(col.ref().getSimpleName());
+					cm.setRefField(col.refField());
+				}
+	
+			columnMetas.add(cm);
+		}
+		}
+		tm.setColumnMetas(columnMetas);
+		tm.setPrimaryKey(String.join(",", primaryKeys));
+		return tm;
+	}
+	/** 以postgresql為准 */
+	private static String transType(Field field,Col col) {
+		if(field.getType().equals(Long.class) || field.getType().equals(long.class)) {
+			return "bigint";
+		}else if(field.getType().equals(String.class)) {
+			return String.format("varchar(%d)", col.size());	
+		}else if(field.getType().equals(Integer.class) || field.getType().equals(int.class)) {
+			return "integer";	
+		}else if(field.getType().equals(BigDecimal.class)) {
+			return String.format("decimal(%d,%d)", col.scale(),col.precision());
+		}else if(field.getType().equals(Boolean.class) || field.getType().equals(boolean.class)) {
+			return "boolean";	
+		}else if(field.getType().equals(Short.class) || field.getType().equals(short.class)) {
+			return "smallint";	
+		}else if(field.getType().equals(Float.class) || field.getType().equals(float.class)) {
+			return "float";
+		}else if(field.getType().equals(Double.class) || field.getType().equals(double.class)) {
+			return "double precision";
+		}
 		return null;
 	}
 }
+

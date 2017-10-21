@@ -11,7 +11,7 @@ public class Goods extends BaseEntity{
 	 */
 	private static final long serialVersionUID = 1L;
 	
-	@Col(length = 32,nullable = true)
+	@Col(size = 32,nullable = true)
 	private String name;
 	
 	@Col(nullable = true)

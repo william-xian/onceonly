@@ -1,7 +1,7 @@
 package cn.mx.app.entity;
 
 import io.onceonly.db.BaseEntity;
-import io.onceonly.db.annotation.Ref;
+import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Tbl;
 
 @Tbl
@@ -12,10 +12,11 @@ public class UserFriend extends BaseEntity{
 	 */
 	private static final long serialVersionUID = 1L;
 
-	@Ref(entity=UserChief.class,nullable = false)
+	@Col(ref=UserChief.class,nullable = false)
 	private Long userId;
-	@Ref(entity=UserChief.class,nullable = false)
+	@Col(ref=UserChief.class,nullable = false)
 	private Long friendId;
+	
 	public Long getUserId() {
 		return userId;
 	}

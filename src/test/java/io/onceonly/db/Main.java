@@ -1,27 +1,17 @@
 package io.onceonly.db;
 
-import java.util.HashSet;
-import java.util.Set;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
 
-import io.onceonly.util.OOUtils;
+import cn.mx.app.entity.UserProfile;
 
 public class Main {
-
+	private static final Gson GSON = new GsonBuilder().serializeNulls().setPrettyPrinting().create();
 	public static void main(String[] args) {
-		DDEngine dde = new DDEngine();
+
+		TableMeta tm = TableMeta.createBy(UserProfile.class);
 		
-		dde.append("O {uid, gid};")
-		.append("O.uid-U {name uame, age};")
-		.append("O.gid-G {name gname};")
-		.append("O.uid-R.uid-R.fid-U {name fname,age fage};")
-			.build();
+		System.out.println(GSON.toJson(tm));
 		
-		System.out.println(OOUtils.toJSON(dde));
-		Set<String> params = new HashSet<String>();
-		params.add("fname");
-		SqlParamData spd = dde.deduceDependByParams("O", params);
-		System.out.println(spd);
-		dde.generateSql(spd);
-		System.out.println(spd.getSql());
 	}
 }

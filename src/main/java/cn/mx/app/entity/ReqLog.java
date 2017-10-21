@@ -12,17 +12,17 @@ public class ReqLog extends BaseEntity{
 	 */
 	private static final long serialVersionUID = 1L;
 
-	@Col(length = 255,nullable = true)
+	@Col(size = 255,nullable = true)
 	private String curUser;
-	@Col(length = 8,colDef="varchar(8) default ''",nullable = false)
+	@Col(size = 8,colDef="varchar(8) default ''",nullable = false)
 	private String method;
-	@Col(length = 255,nullable = true)
+	@Col(size = 255,nullable = true)
 	private String params;
-	@Col(length = 16,nullable = true)
+	@Col(size = 16,nullable = true)
 	private String remoteAddr;
-	@Col(length = 32,nullable = true)
+	@Col(size = 32,nullable = true)
 	private String sessionId;
-	@Col(length = 255,nullable = true)
+	@Col(size = 255,nullable = true)
 	private String uri;
 	@Col(nullable = false)
 	private Long beginTime;

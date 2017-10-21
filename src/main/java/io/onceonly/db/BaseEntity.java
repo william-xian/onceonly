@@ -33,11 +33,12 @@ public class BaseEntity implements Serializable{
 	@Id @GeneratedValue(strategy = GenerationType.TABLE)  
     @Column(nullable = false, length=32)
 	@OId
+    @Col(nullable = false)
 	protected Long id;
 	@JsonIgnore
     @Column(nullable = false)
     @Col(nullable = false)
-    private boolean _del = false;
+	protected boolean del = false;
 	
 	public Long getId() {
 		return id;
@@ -45,11 +46,12 @@ public class BaseEntity implements Serializable{
 	public void setId(Long id) {
 		this.id = id;
 	}
-	public boolean is_del() {
-		return _del;
+	public boolean isDel() {
+		return del;
 	}
-	public void set_del(boolean _del) {
-		this._del = _del;
+
+	public void setDel(boolean del) {
+		this.del = del;
 	}
 	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
     @Override

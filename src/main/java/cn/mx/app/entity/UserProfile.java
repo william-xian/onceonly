@@ -10,12 +10,13 @@ public class UserProfile extends BaseEntity{
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-    @Col(nullable = false, length=20)
+    @Col(nullable = false, size=20)
 	private String nickname;
     @Col(nullable = false)
 	private Boolean gender;
-    @Col(nullable = false, length=16)
+    @Col(nullable = false, size=16)
 	private String phone;
+    
 	public String getNickname() {
 		return nickname;
 	}

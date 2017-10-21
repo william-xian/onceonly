@@ -10,13 +10,13 @@ public class UserChief extends BaseEntity{
 	 * 
 	 */
 	private static final long serialVersionUID = 1L;
-    @Col(nullable = false, length=32,unique=true)
+    @Col(nullable = false, size=32,unique=true)
 	private String name;
-    @Col(nullable = true, length=64)
+    @Col(nullable = true, size=64)
     private String passwd;
-    @Col(nullable = true, length=255)
+    @Col(nullable = true, size=255)
     private String avatar;
-    @Col(nullable = true, length=255)
+    @Col(nullable = true, size=255)
     private Integer genre;
     
 	public String getName() {

@@ -17,14 +17,24 @@ public @interface Col {
     boolean nullable() default true;
     
     String pattern() default "";
+    
+    Class<?> valRef() default void.class;
 
     String colDef() default "";
 
+    Class<?> ref() default void.class;
+    /** 使用该子段是必须使用该entity的主键  */
+    String refField() default "";
+    /** 使用外键  */
+    boolean useFK() default true;
+    
     /**
-     * (Optional) The column length. (Applies only if a
+     * (Optional) 
+     * The string-valued column length. (Applies only if a
      * string-valued column is used.)
+     * The decimal column scale for a decimal (exact numeric) column
      */
-    int length() default 255;
+    int size() default 255;
 
     /**
      * (Optional) The precision for a decimal (exact numeric)
