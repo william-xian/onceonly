@@ -294,7 +294,7 @@ public class TableMeta {
 		}else if(field.getType().equals(Integer.class) || field.getType().equals(int.class)) {
 			return "integer";	
 		}else if(field.getType().equals(BigDecimal.class)) {
-			return String.format("decimal(%d,%d)", col.scale(),col.precision());
+			return String.format("decimal(%d,%d)", col.precision(), col.scale());
 		}else if(field.getType().equals(Boolean.class) || field.getType().equals(boolean.class)) {
 			return "boolean";	
 		}else if(field.getType().equals(Short.class) || field.getType().equals(short.class)) {
