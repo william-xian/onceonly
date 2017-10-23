@@ -10,8 +10,8 @@ public class Main {
 	public static void main(String[] args) {
 
 		TableMeta tm = TableMeta.createBy(UserProfile.class);
-		
 		System.out.println(GSON.toJson(tm));
 		
+		System.out.println(tm.createTableSql());
 	}
 }

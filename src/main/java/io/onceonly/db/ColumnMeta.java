@@ -9,6 +9,8 @@ public class ColumnMeta {
 	String refField;
 	boolean useFK;
 	String using;
+	boolean primaryKey;
+	
 	/**
 	 * 正则表达式 或@JSON,@Email等特定教研
 	 */
@@ -66,5 +68,11 @@ public class ColumnMeta {
 	}
 	public void setPattern(String pattern) {
 		this.pattern = pattern;
+	}
+	public boolean isPrimaryKey() {
+		return primaryKey;
+	}
+	public void setPrimaryKey(boolean primaryKey) {
+		this.primaryKey = primaryKey;
 	}
 }

@@ -13,27 +13,45 @@ import java.util.Set;
 
 import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Constraint;
+import io.onceonly.db.annotation.ConstraintType;
 import io.onceonly.db.annotation.OId;
 import io.onceonly.db.annotation.Tbl;
 
 public class TableMeta {
 	String table;
-	/** 复合主键以逗号隔开不可有空格*/
-	String primaryKey;
-	List<String[]> uniqueConstraint;
+	ConstraintMeta primaryKey;
+	List<ConstraintMeta> fieldConstraint = new ArrayList<>(0);
 	List<ConstraintMeta> constraints;
-	Map<String,ColumnMeta> columnMeta;
+	Map<String,ColumnMeta> columnMeta = new HashMap<>();
 	public String getTable() {
 		return table;
 	}
 	public void setTable(String table) {
 		this.table = table;
+		freshConstraintMetaTable();
 	}
-	public String getPrimaryKey() {
+	
+	public ConstraintMeta getPrimaryKey() {
 		return primaryKey;
 	}
-	public void setPrimaryKey(String primaryKey) {
+	public void setPrimaryKey(ConstraintMeta primaryKey) {
 		this.primaryKey = primaryKey;
+	}
+	public void setPrimaryKey(List<String> primaryKeys) {
+		ConstraintMeta pk = new ConstraintMeta();
+		pk.setTable(this.table);
+		pk.setName(String.format("pk_%s_%s", pk.table,String.join("_", primaryKeys)));
+		pk.setColumns(primaryKeys);
+		pk.setType(ConstraintType.PRIMARY_KEY);
+		pk.setUsing("BTREE");
+		this.primaryKey = pk;
+	}
+	
+	public List<ConstraintMeta> getFieldConstraint() {
+		return fieldConstraint;
+	}
+	public void setFieldConstraint(List<ConstraintMeta> fieldConstraint) {
+		this.fieldConstraint = fieldConstraint;
 	}
 	public List<ConstraintMeta> getConstraints() {
 		return constraints;
@@ -46,54 +64,43 @@ public class TableMeta {
 	}
 	public void setColumnMetas(Collection<ColumnMeta> columnMetas) {
 		this.columnMeta = new HashMap<>(columnMetas.size());
+		this.fieldConstraint = new ArrayList<>(columnMetas.size());
 		for(ColumnMeta cm:columnMetas) {
 			this.columnMeta.put(cm.name, cm);
 		}
+		freshConstraintMetaTable();
 	}
-	private String addPrimaryKeySql(String primaryKey) {
-		StringBuffer sql = new StringBuffer();
-		sql.append(String.format("ALTER TABLE %s DROP CONSTRAINT %s;",table,primaryKey.replace(',', '_')));
-		sql.append(String.format("ALTER TABLE %s ADD CONSTRAINT %s PRIMARY KEY (%s);",table,primaryKey.replace(',', '_'),primaryKey));
-		return sql.toString();
-	}
-	private String dropPrimaryKeySql(String primaryKey) {
-		StringBuffer sql = new StringBuffer();
-		sql.append(String.format("ALTER TABLE %s DROP CONSTRAINT %s;",table,primaryKey.replace(',', '_')));
-		return sql.toString();
-	}
-	private String addUniqueSql(Collection<ColumnMeta> columnMetas) {
-		StringBuffer sql = new StringBuffer();
-		for(ColumnMeta ocm:columnMetas) {
-			if(ocm.unique){
-				sql.append(String.format("ALTER TABLE %s ADD CONSTRAINT %s_%s UNIQUE (%s);",table,table,ocm.name));	
-			}	
+	
+	private void freshConstraintMetaTable() {
+		if(columnMeta != null && !columnMeta.isEmpty()) {
+			fieldConstraint = new ArrayList<>(columnMeta.size());
+			for(ColumnMeta cm:columnMeta.values()) {
+				if(cm.unique){
+					ConstraintMeta cnsMeta = new ConstraintMeta();
+					List<String> cols = new ArrayList<> ();
+					cols.add(cm.getName());
+					cnsMeta.setColumns(new ArrayList<String>(cols));
+					cnsMeta.setTable(this.getTable());
+					cnsMeta.setName("un_" + cnsMeta.getTable()+"_"+cm.name);
+					cnsMeta.setUsing(cm.using);
+					cnsMeta.setType(ConstraintType.UNIQUE);
+					fieldConstraint.add(cnsMeta);
+				}else if(cm.useFK && cm.refTable != null) {
+					ConstraintMeta cnsMeta = new ConstraintMeta();
+					List<String> cols = new ArrayList<> ();
+					cols.add(cm.getName());
+					cnsMeta.setColumns(new ArrayList<String>(cols));
+					cnsMeta.setTable(this.getTable());
+					cnsMeta.setName("fk_"+cnsMeta.getTable()+"_"+cm.name);
+					cnsMeta.setUsing(cm.using);
+					cnsMeta.setType(ConstraintType.FOREGIN_KEY);
+					cnsMeta.setRefTable(cm.refTable);
+					fieldConstraint.add(cnsMeta);
+				}
+			}
 		}
-		return sql.toString();
 	}
-	private String dropUniqueSql(Collection<ColumnMeta> columnMetas) {
-		StringBuffer sql = new StringBuffer();
-		for(ColumnMeta ocm:columnMetas) {
-			sql.append(String.format("ALTER TABLE %s DROP CONSTRAINT %s_%s;",table, table, ocm.name));
-		}
-		return sql.toString();
-	}
-	private String addForeignKeySql(Collection<ColumnMeta> columnMetas) {
-		StringBuffer sql = new StringBuffer();
-		for(ColumnMeta ocm:columnMetas) {
-			if(ocm.useFK && ocm.refTable !=null){
-				sql.append(String.format("ALTER TABLE %s ADD CONSTRAINT %s_%s FOREIGN KEY (%s) REFERENCES %s(%s);",table,table,ocm.name,ocm.name,ocm.refTable,ocm.name));
-			}	
-		}
-		return sql.toString();
-	}
-	private String dropForeignKeySql(List<ColumnMeta> columnMetas) {
-		StringBuffer sql = new StringBuffer();
-		for(ColumnMeta ocm:columnMetas) {
-			sql.append(String.format("ALTER TABLE %s DROP CONSTRAINT %s_%s FOREIGN KEY (%s);",table,table,ocm.name,ocm.name));
-		}
-		return sql.toString();
-	}
-
+	
 	private String alterColumnSql(List<ColumnMeta> columnMetas) {
 		StringBuffer sql = new StringBuffer();
 		for(ColumnMeta ocm:columnMetas) {
@@ -109,20 +116,6 @@ public class TableMeta {
 		return sql.toString();
 	}
 
-	private String addConstraintSql(List<String[]> uniqueConstraint) {
-		StringBuffer sql = new StringBuffer();
-		for(String[] tuple:uniqueConstraint) {
-			sql.append(String.format("ALTER TABLE %s ADD CONSTRAINT %s_%s UNIQUE (%s);",table,table,String.join("_", tuple),String.join(",", tuple)));		
-		}
-		return sql.toString();
-	}
-	private String dropConstraintSql(List<String[]> uniqueConstraint) {
-		StringBuffer sql = new StringBuffer();
-		for(String[] tuple:uniqueConstraint) {
-			sql.append(String.format("ALTER TABLE %s DROP CONSTRAINT %s_%s;",table,table,String.join("_", tuple)));		
-		}
-		return sql.toString();
-	}
 	
 	/** drop table if exists tbl_a;*/
 	public String createTableSql() {
@@ -134,14 +127,10 @@ public class TableMeta {
 		tbl.delete(tbl.length()-1, tbl.length());
 		tbl.append(");");
 		if(primaryKey != null) {
-			tbl.append(addPrimaryKeySql(primaryKey));
+			tbl.append(primaryKey.genSql(DDLOpt.ADD));
 		}
-		/** 添加外键 */
-		tbl.append(addForeignKeySql(this.columnMeta.values()));
-		/** 添加唯一约束 */
-		tbl.append(addUniqueSql(this.columnMeta.values()));
 		/** 添加复合约束 */
-		tbl.append(addConstraintSql(uniqueConstraint));
+		tbl.append(ConstraintMeta.addConstraintSql(fieldConstraint));
 		return tbl.toString();
 	}
 
@@ -157,64 +146,83 @@ public class TableMeta {
 		StringBuffer sql = new StringBuffer();
 		Map<String,ColumnMeta> otherColumn = other.columnMeta;
 		List<ColumnMeta> newColumns = new ArrayList<>();
-		List<ColumnMeta> dropIndexs = new ArrayList<>();
-		List<ColumnMeta> dropForeignKeys = new ArrayList<>();
+		List<ConstraintMeta> dropIndexs = new ArrayList<>();
+		List<ConstraintMeta> dropForeignKeys = new ArrayList<>();
 		List<ColumnMeta> alterColumns = new ArrayList<>();
-		List<ColumnMeta> addForeignKeys = new ArrayList<>();
+		List<ConstraintMeta> addForeignKeys = new ArrayList<>();
 		for(ColumnMeta ocm:otherColumn.values()) {
 			ColumnMeta cm = columnMeta.get(ocm.name);
-			if(cm == null) {
+			if(cm == null) {				
 				newColumns.add(ocm);
 			}else {
 				if(cm.unique &&!ocm.unique) {
-					dropIndexs.add(ocm);
+					ConstraintMeta cnstMeta = new ConstraintMeta();
+					cnstMeta.setColumns(Arrays.asList(ocm.getName()));
+					cnstMeta.setTable(table);
+					cnstMeta.setType(ConstraintType.UNIQUE);
+					cnstMeta.setUsing(ocm.getUsing());
+					dropIndexs.add(cnstMeta);
 				}
 				/** 删除外键  */
 				if(cm.useFK && !ocm.useFK) {
-					dropForeignKeys.add(cm);
+					ConstraintMeta cnstMeta = new ConstraintMeta();
+					cnstMeta.setColumns(Arrays.asList(cm.getName()));
+					cnstMeta.setTable(table);
+					cnstMeta.setType(ConstraintType.FOREGIN_KEY);
+					cnstMeta.setRefTable(cm.getRefField());
+					cnstMeta.setUsing(cm.getUsing());
+					dropForeignKeys.add(cnstMeta);
 				}
 				if(!cm.type.equals(ocm.type) || cm.nullable != ocm.nullable) {
 					alterColumns.add(ocm);
 				}
 				if(!cm.useFK && ocm.useFK) {
 					if(ocm.useFK && ocm.refTable !=null){
-						addForeignKeys.add(ocm);
+						ConstraintMeta cnstMeta = new ConstraintMeta();
+						cnstMeta.setColumns(Arrays.asList(cm.getName()));
+						cnstMeta.setTable(table);
+						cnstMeta.setType(ConstraintType.FOREGIN_KEY);
+						cnstMeta.setRefTable(cm.getRefField());
+						cnstMeta.setUsing(cm.getUsing());
+						addForeignKeys.add(cnstMeta);
 					}
 				}
 			}
 		}
+		
 		Set<String> oldConstraintSet = new HashSet<String>();
 		Set<String> currentSet = new HashSet<String>();
-		for(String[] tuple:uniqueConstraint) {
-			oldConstraintSet.add(String.join(",", tuple));
+		
+		for(ConstraintMeta tuple:fieldConstraint) {
+			oldConstraintSet.add(String.join(",", tuple.columns));
 		}
-		List<String[]> addUniqueConstraint = new ArrayList<>();
-		for(String[] tuple:other.uniqueConstraint) {
-			currentSet.add(String.join(",", tuple));
-			if(!oldConstraintSet.contains(String.join(",", tuple))){
+		List<ConstraintMeta> addUniqueConstraint = new ArrayList<>();
+		for(ConstraintMeta tuple:other.fieldConstraint) {
+			currentSet.add(String.join(",", tuple.columns));
+			if(!oldConstraintSet.contains(String.join(",", tuple.columns))){
 				addUniqueConstraint.add(tuple);
 			}
 		}
-		List<String[]> dropUniqueConstraint = new ArrayList<>();
-		for(String[] tuple:uniqueConstraint) {
-			if(!currentSet.contains(String.join(",", tuple))){
+		List<ConstraintMeta> dropUniqueConstraint = new ArrayList<>();
+		for(ConstraintMeta tuple:fieldConstraint) {
+			if(!currentSet.contains(String.join(",", tuple.columns))){
 				dropUniqueConstraint.add(tuple);
 			}
 		}
-		
 		if(primaryKey != null && primaryKey.equals(other.primaryKey)) {
-			sql.append(dropPrimaryKeySql(primaryKey));
+			sql.append(primaryKey.genSql(DDLOpt.DROP));
 		}
 		if(other.primaryKey != null && other.primaryKey.equals(primaryKey)) {
-			sql.append(addPrimaryKeySql(other.primaryKey));
+			sql.append(other.primaryKey.genSql(DDLOpt.ADD));
 		}
 		sql.append(addColumnSql(newColumns));
-		sql.append(dropUniqueSql(dropIndexs));
-		sql.append(dropForeignKeySql(dropForeignKeys));
+		
+		sql.append(ConstraintMeta.dropConstraintSql(dropIndexs));
+		sql.append(ConstraintMeta.dropConstraintSql(dropForeignKeys));
 		sql.append(alterColumnSql(alterColumns));
-		sql.append(addForeignKeySql(addForeignKeys));
-		sql.append(dropConstraintSql(dropUniqueConstraint));
-		sql.append(addConstraintSql(addUniqueConstraint));
+		sql.append(ConstraintMeta.addConstraintSql(addForeignKeys));
+		sql.append(ConstraintMeta.dropConstraintSql(dropUniqueConstraint));
+		sql.append(ConstraintMeta.addConstraintSql(addUniqueConstraint));
 		return sql.length() == 0 ? null:sql.toString();
 	}
 	/**
@@ -277,12 +285,11 @@ public class TableMeta {
 					cm.setRefTable(col.ref().getSimpleName());
 					cm.setRefField(col.refField());
 				}
-	
 			columnMetas.add(cm);
 		}
 		}
 		tm.setColumnMetas(columnMetas);
-		tm.setPrimaryKey(String.join(",", primaryKeys));
+		tm.setPrimaryKey(primaryKeys);
 		return tm;
 	}
 	/** 以postgresql為准 */

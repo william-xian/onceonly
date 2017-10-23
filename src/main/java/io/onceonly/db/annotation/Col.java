@@ -10,23 +10,6 @@ import java.lang.annotation.Target;
 @Target({METHOD, FIELD})
 @Retention(RUNTIME)
 public @interface Col {
-    boolean unique() default false;
-    
-    String using() default "BTREE";
-    
-    boolean nullable() default true;
-    
-    String pattern() default "";
-    
-    Class<?> valRef() default void.class;
-
-    String colDef() default "";
-
-    Class<?> ref() default void.class;
-    /** 使用该子段是必须使用该entity的主键  */
-    String refField() default "";
-    /** 使用外键  */
-    boolean useFK() default true;
     
     /**
      * (Optional) 
@@ -36,6 +19,17 @@ public @interface Col {
      */
     int size() default 255;
 
+    String colDef() default "";
+
+	
+	boolean unique() default false;
+    
+    String using() default "BTREE";
+    
+    boolean nullable() default true;
+    
+    String pattern() default "";
+    
     /**
      * (Optional) The precision for a decimal (exact numeric)
      * column. (Applies only if a decimal column is used.)
@@ -49,4 +43,22 @@ public @interface Col {
      * (Applies only if a decimal column is used.)
      */
     int scale() default 0;
+    
+    /** 
+     * 该字段的值引用自某类字段
+     * @return
+     */
+    Class<?> valRef() default void.class;
+
+    Class<?> ref() default void.class;
+    /** depends on ref  */
+    boolean useFK() default true;
+    /** depends on ref，该字段要与ref对应表的字段同步  */
+    String refField() default "";
+    /** 
+     * 引用的ID可能来源某个 表。
+     * 注意枚举中的表都会被连接
+     */
+    Class<?>[] refEnum() default {};
+
 }
