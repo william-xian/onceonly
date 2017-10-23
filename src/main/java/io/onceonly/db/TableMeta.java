@@ -127,7 +127,7 @@ public class TableMeta {
 		tbl.delete(tbl.length()-1, tbl.length());
 		tbl.append(");");
 		if(primaryKey != null) {
-			tbl.append(primaryKey.genSql(DDLOpt.ADD));
+			tbl.append(primaryKey.genSql(ConstraintOpt.ADD));
 		}
 		/** 添加复合约束 */
 		tbl.append(ConstraintMeta.addConstraintSql(fieldConstraint));
@@ -210,10 +210,10 @@ public class TableMeta {
 			}
 		}
 		if(primaryKey != null && primaryKey.equals(other.primaryKey)) {
-			sql.append(primaryKey.genSql(DDLOpt.DROP));
+			sql.append(primaryKey.genSql(ConstraintOpt.DROP));
 		}
 		if(other.primaryKey != null && other.primaryKey.equals(primaryKey)) {
-			sql.append(other.primaryKey.genSql(DDLOpt.ADD));
+			sql.append(other.primaryKey.genSql(ConstraintOpt.ADD));
 		}
 		sql.append(addColumnSql(newColumns));
 		

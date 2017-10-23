@@ -99,7 +99,7 @@ public class ConstraintMeta {
 		return def;
 		
 	}
-	public String genSql(DDLOpt opt) {
+	public String genSql(ConstraintOpt opt) {
 		String cName = (name==null?genName():name);
 		String def = genDef();
 		switch(opt) {
@@ -127,20 +127,15 @@ public class ConstraintMeta {
 	public static String addConstraintSql(List<ConstraintMeta> uniqueConstraint) {
 		StringBuffer sql = new StringBuffer();
 		for(ConstraintMeta tuple:uniqueConstraint) {
-			sql.append(tuple.genSql(DDLOpt.ADD));		
+			sql.append(tuple.genSql(ConstraintOpt.ADD));		
 		}
 		return sql.toString();
 	}
 	public static String dropConstraintSql(List<ConstraintMeta> uniqueConstraint) {
 		StringBuffer sql = new StringBuffer();
 		for(ConstraintMeta tuple:uniqueConstraint) {
-			sql.append(tuple.genSql(DDLOpt.DROP));		
+			sql.append(tuple.genSql(ConstraintOpt.DROP));		
 		}
 		return sql.toString();
 	}
-}
-enum DDLOpt {
-	ALTER,
-	ADD,
-	DROP
 }
