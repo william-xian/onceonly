@@ -99,42 +99,33 @@ public class ConstraintMeta {
 		return def;
 		
 	}
-	public String genSql(ConstraintOpt opt) {
+	
+	public String addSql() {
 		String cName = (name==null?genName():name);
 		String def = genDef();
-		switch(opt) {
-		case DROP:
-			return String.format("ALTER TABLE %s DROP CONSTRAINT %s_%s;",table, table,cName);
-		case ADD:
-			if(type == ConstraintType.INDEX) {
-				//TODO unique
-				return String.format("CREATE INDEX %s %s;",cName,def);
-			}else {
-				return String.format("ALTER TABLE %s ADD CONSTRAINT %s %s;",table,cName,def);
-			}
-		case ALTER:
-			if(type == ConstraintType.INDEX) {
-				return null;
-			}else {
-				//TODO 好像没有啊 return String.format("ALTER TABLE %s ALTER CONSTRAINT %s %s;",table,cName,def);
-				return null;
-			}
-			default:
-				return null;
+		if (type == ConstraintType.INDEX) {
+			return String.format("CREATE INDEX %s %s;", cName, def);
+		} else {
+			return String.format("ALTER TABLE %s ADD CONSTRAINT %s %s;", table, cName, def);
 		}
 	}
 	
-	public static String addConstraintSql(List<ConstraintMeta> uniqueConstraint) {
+	public String dropSql() {
+		String cName = (name==null?genName():name);
+		return String.format("ALTER TABLE %s DROP CONSTRAINT %s_%s;",table, table,cName);
+	}
+	
+	public static String addConstraintSql(List<ConstraintMeta> cms) {
 		StringBuffer sql = new StringBuffer();
-		for(ConstraintMeta tuple:uniqueConstraint) {
-			sql.append(tuple.genSql(ConstraintOpt.ADD));		
+		for(ConstraintMeta cm:cms) {
+			sql.append(cm.addSql());
 		}
 		return sql.toString();
 	}
-	public static String dropConstraintSql(List<ConstraintMeta> uniqueConstraint) {
+	public static String dropConstraintSql(List<ConstraintMeta> cms) {
 		StringBuffer sql = new StringBuffer();
-		for(ConstraintMeta tuple:uniqueConstraint) {
-			sql.append(tuple.genSql(ConstraintOpt.DROP));		
+		for(ConstraintMeta cm:cms) {
+			sql.append(cm.dropSql());
 		}
 		return sql.toString();
 	}

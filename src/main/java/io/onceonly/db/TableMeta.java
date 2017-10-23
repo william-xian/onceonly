@@ -4,12 +4,13 @@ import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Constraint;
@@ -19,10 +20,13 @@ import io.onceonly.db.annotation.Tbl;
 
 public class TableMeta {
 	String table;
+	String extend;
 	ConstraintMeta primaryKey;
 	List<ConstraintMeta> fieldConstraint = new ArrayList<>(0);
 	List<ConstraintMeta> constraints;
-	Map<String,ColumnMeta> columnMeta = new HashMap<>();
+	List<ColumnMeta> columnMetas = new ArrayList<>(0);
+	@JsonIgnore
+	Map<String,ColumnMeta> nameToColumnMeta = new HashMap<>();
 	public String getTable() {
 		return table;
 	}
@@ -31,6 +35,15 @@ public class TableMeta {
 		freshConstraintMetaTable();
 	}
 	
+	public String getExtend() {
+		return extend;
+	}
+	public void setExtend(String extend) {
+		this.extend = extend;
+	}
+	public List<ColumnMeta> getColumnMetas() {
+		return columnMetas;
+	}
 	public ConstraintMeta getPrimaryKey() {
 		return primaryKey;
 	}
@@ -60,21 +73,22 @@ public class TableMeta {
 		this.constraints = constraints;
 	}
 	public Map<String, ColumnMeta> getColumnMeta() {
-		return columnMeta;
+		return nameToColumnMeta;
 	}
-	public void setColumnMetas(Collection<ColumnMeta> columnMetas) {
-		this.columnMeta = new HashMap<>(columnMetas.size());
+	public void setColumnMetas(List<ColumnMeta> columnMetas) {
+		this.columnMetas = columnMetas;
+		this.nameToColumnMeta = new HashMap<>(columnMetas.size());
 		this.fieldConstraint = new ArrayList<>(columnMetas.size());
 		for(ColumnMeta cm:columnMetas) {
-			this.columnMeta.put(cm.name, cm);
+			this.nameToColumnMeta.put(cm.name, cm);
 		}
 		freshConstraintMetaTable();
 	}
 	
 	private void freshConstraintMetaTable() {
-		if(columnMeta != null && !columnMeta.isEmpty()) {
-			fieldConstraint = new ArrayList<>(columnMeta.size());
-			for(ColumnMeta cm:columnMeta.values()) {
+		if(columnMetas != null && !columnMetas.isEmpty()) {
+			fieldConstraint = new ArrayList<>(columnMetas.size());
+			for(ColumnMeta cm:columnMetas) {
 				if(cm.unique){
 					ConstraintMeta cnsMeta = new ConstraintMeta();
 					List<String> cols = new ArrayList<> ();
@@ -121,13 +135,13 @@ public class TableMeta {
 	public String createTableSql() {
 		StringBuffer tbl = new StringBuffer();
 		tbl.append(String.format("CREATE TABLE %s (", table));
-		for(ColumnMeta cm:columnMeta.values()) {
+		for(ColumnMeta cm:columnMetas) {
 			tbl.append(String.format("%s %s%s,", cm.name,cm.type, cm.nullable?"":" not null"));
 		}
 		tbl.delete(tbl.length()-1, tbl.length());
 		tbl.append(");");
 		if(primaryKey != null) {
-			tbl.append(primaryKey.genSql(ConstraintOpt.ADD));
+			tbl.append(primaryKey.addSql());
 		}
 		/** 添加复合约束 */
 		tbl.append(ConstraintMeta.addConstraintSql(fieldConstraint));
@@ -144,14 +158,14 @@ public class TableMeta {
 			return null;
 		}
 		StringBuffer sql = new StringBuffer();
-		Map<String,ColumnMeta> otherColumn = other.columnMeta;
+		List<ColumnMeta> otherColumn = other.columnMetas;
 		List<ColumnMeta> newColumns = new ArrayList<>();
 		List<ConstraintMeta> dropIndexs = new ArrayList<>();
 		List<ConstraintMeta> dropForeignKeys = new ArrayList<>();
 		List<ColumnMeta> alterColumns = new ArrayList<>();
 		List<ConstraintMeta> addForeignKeys = new ArrayList<>();
-		for(ColumnMeta ocm:otherColumn.values()) {
-			ColumnMeta cm = columnMeta.get(ocm.name);
+		for(ColumnMeta ocm:otherColumn) {
+			ColumnMeta cm = nameToColumnMeta.get(ocm.name);
 			if(cm == null) {				
 				newColumns.add(ocm);
 			}else {
@@ -210,10 +224,10 @@ public class TableMeta {
 			}
 		}
 		if(primaryKey != null && primaryKey.equals(other.primaryKey)) {
-			sql.append(primaryKey.genSql(ConstraintOpt.DROP));
+			sql.append(primaryKey.dropSql());
 		}
 		if(other.primaryKey != null && other.primaryKey.equals(primaryKey)) {
-			sql.append(other.primaryKey.genSql(ConstraintOpt.ADD));
+			sql.append(other.primaryKey.addSql());
 		}
 		sql.append(addColumnSql(newColumns));
 		
@@ -254,19 +268,23 @@ public class TableMeta {
 		tm.setConstraints(constraints);
 		List<ColumnMeta> columnMetas = new ArrayList<>();
 		List<String> primaryKeys = new ArrayList<>();
+		List<Class<?>> classes = new ArrayList<>();
 		for(Class<?> clazz = entity;!clazz.equals(Object.class);clazz=clazz.getSuperclass()) {
-		for(Field field:clazz.getDeclaredFields()) {
-			Col col = field.getAnnotation(Col.class);
-			if (col == null) {
-				continue;
-			}
-			ColumnMeta cm = new ColumnMeta();
-			cm.setName(field.getName());
-			OId oid = field.getAnnotation(OId.class);
-			if(oid != null) {
-				primaryKeys.add(field.getName());
-			}
-			cm.setNullable(col.nullable());
+			classes.add(0, clazz);
+		}
+		for (Class<?> clazz : classes) {
+			for (Field field : clazz.getDeclaredFields()) {
+				Col col = field.getAnnotation(Col.class);
+				if (col == null) {
+					continue;
+				}
+				ColumnMeta cm = new ColumnMeta();
+				cm.setName(field.getName());
+				OId oid = field.getAnnotation(OId.class);
+				if (oid != null) {
+					primaryKeys.add(field.getName());
+				}
+				cm.setNullable(col.nullable());
 				cm.setPattern(col.pattern());
 				if (col.colDef().equals("")) {
 					String type = transType(field, col);
@@ -285,8 +303,8 @@ public class TableMeta {
 					cm.setRefTable(col.ref().getSimpleName());
 					cm.setRefField(col.refField());
 				}
-			columnMetas.add(cm);
-		}
+				columnMetas.add(cm);
+			}
 		}
 		tm.setColumnMetas(columnMetas);
 		tm.setPrimaryKey(primaryKeys);
