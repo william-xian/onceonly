@@ -5,7 +5,6 @@ import java.util.Map;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.data.domain.Pageable;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
@@ -34,12 +33,10 @@ public class AboutController {
 
 	@RequestMapping(value = "/", method = { RequestMethod.GET, RequestMethod.POST })
 	@ResponseBody
-	public Map<String, Object> about(@RequestBody Req data,@RequestBody Map<String,Object> extra,Pageable page) {
+	public Map<String, Object> about(@RequestBody Req data,@RequestBody Map<String,Object> extra) {
 		Map<String, Object> result = new HashMap<String, Object>();
 		result.put("req", data);
 		result.put("extra", extra);
-		result.put("size", page.getPageSize());
-		result.put("page", page.getPageNumber());
 		return result;
 	}
 }

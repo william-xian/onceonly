@@ -2,13 +2,10 @@ package cn.mx.app.entity;
 
 import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Tbl;
+import io.onceonly.db.tbl.BaseEntity;
 
 @Tbl
 public class Goods extends BaseEntity{
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
 	
 	@Col(size = 32,nullable = true)
 	private String name;

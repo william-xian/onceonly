@@ -32,5 +32,9 @@ public interface Dao<T,ID> {
 	int remove(Cnd cnd);
 	int delete(Cnd cnd);
 	Page<T> search(Cnd cnd);
+	List<T> find(Cnd cnd);
 	void download(Cnd cnd,Consumer<T> consumer);
+	
+	long count();
+	long count(Cnd cnd);
 }

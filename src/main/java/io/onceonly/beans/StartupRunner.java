@@ -12,16 +12,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
-import org.springframework.stereotype.Component;
 
 import io.onceonly.annotation.Const;
 import io.onceonly.annotation.I18nConst;
 import io.onceonly.annotation.I18nMsg;
+import io.onceonly.db.tbl.OOI18n;
 import io.onceonly.exception.Failed;
 import io.onceonly.util.AnnotationScanner;
 import io.onceonly.util.OOUtils;
 
-@Component
+// TODO @Component
 @Order(1)
 public class StartupRunner implements CommandLineRunner {
 	private static final Log logger = LogFactory.getLog(StartupRunner.class);
@@ -34,7 +34,7 @@ public class StartupRunner implements CommandLineRunner {
     private final static AnnotationScanner annotations = new AnnotationScanner(OOI18n.class,I18nMsg.class,I18nConst.class);
  
     private void loadI18nToCache(){
-        Iterable<OOI18n> i18ns = i18nRepository.findAll();
+        Iterable<OOI18n> i18ns = i18nRepository.find(null);
         Iterator<OOI18n> iter = i18ns.iterator();
         while(iter.hasNext()) {
         	OOI18n i = iter.next();
@@ -52,7 +52,7 @@ public class StartupRunner implements CommandLineRunner {
     			try {
 					String name = field.get(null).toString();
 					String id ="msg/"+group.value()+"_"+OOUtils.encodeMD5(name);
-					OOI18n i18n = i18nRepository.findOne(name);
+					OOI18n i18n = i18nRepository.get(name);
 					if(i18n == null) {
 						i18n = new OOI18n();	
 						i18n.setId(id);
@@ -65,7 +65,7 @@ public class StartupRunner implements CommandLineRunner {
 				}
     		}
     	}
-		i18nRepository.save(i18ns);
+		i18nRepository.insert(i18ns);
     }
 
     private void annlysisConst(){
@@ -82,7 +82,7 @@ public class StartupRunner implements CommandLineRunner {
 					String val = field.get(null).toString();
 					String id = "const/" + group.value()+ "_"+ clazz.getSimpleName() + "_" + fieldname;
 					String name = cons.name();
-					OOI18n i18n = i18nRepository.findOne(id);
+					OOI18n i18n = i18nRepository.get(id);
 					if(i18n == null) {
 						i18n = new OOI18n();
 						i18n.setId(id);
@@ -99,7 +99,7 @@ public class StartupRunner implements CommandLineRunner {
 						}
 						if(!i18n.getName().equals(name) ){
 							i18n.setName(name);
-							i18nRepository.save(i18n);
+							i18nRepository.insert(i18n);
 				        	logger.debug("update: " + i18n);
 						}
 					}
@@ -108,7 +108,7 @@ public class StartupRunner implements CommandLineRunner {
 				}
     		}
     	}
-		i18nRepository.save(i18ns);
+		i18nRepository.insert(i18ns);
     }
     
     @Override

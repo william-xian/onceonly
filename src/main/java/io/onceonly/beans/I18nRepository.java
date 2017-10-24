@@ -1,16 +1,24 @@
 package io.onceonly.beans;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.cache.annotation.CacheConfig;
-import org.springframework.data.repository.CrudRepository;
-import org.springframework.data.repository.query.Param;
-import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import org.springframework.stereotype.Component;
 
-@RepositoryRestResource
+import io.onceonly.db.dao.impl.DaoImpl;
+import io.onceonly.db.tbl.OOI18n;
+
 @CacheConfig(cacheNames = "i18ns")
-public interface I18nRepository extends CrudRepository<OOI18n,String> {
-	List<OOI18n> findByIdStartingWith(@Param("id")String id);
-	OOI18n findOneByName(@Param("name")String name);
-	List<OOI18n> findByVal(@Param("val")String val);
+@Component
+public class I18nRepository extends DaoImpl<OOI18n,String> {
+	List<OOI18n> findByIdStartingWith(String id) {
+		return new ArrayList<>();
+	}
+	OOI18n findOneByName(String name) {
+		return new OOI18n();
+	}
+	List<OOI18n> findByVal(String val) {
+		return new ArrayList<>();
+	}
 }

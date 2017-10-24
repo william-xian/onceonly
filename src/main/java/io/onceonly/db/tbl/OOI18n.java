@@ -1,15 +1,14 @@
 package io.onceonly.db.tbl;
 
-import javax.persistence.Id;
-
 import io.onceonly.annotation.I18nConst;
 import io.onceonly.db.annotation.Col;
+import io.onceonly.db.annotation.OId;
 import io.onceonly.db.annotation.Tbl;
 import io.onceonly.util.OOUtils;
 
 @Tbl
 public class OOI18n {
-	@Id
+	@OId
     @Col(size=64,nullable = false)
 	private String id;
 	@Col(size=255,nullable=false)

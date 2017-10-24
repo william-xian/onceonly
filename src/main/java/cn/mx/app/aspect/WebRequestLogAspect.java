@@ -4,11 +4,6 @@ import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.aspectj.lang.JoinPoint;
-import org.aspectj.lang.annotation.AfterReturning;
-import org.aspectj.lang.annotation.Aspect;
-import org.aspectj.lang.annotation.Before;
-import org.aspectj.lang.annotation.Pointcut;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -17,11 +12,11 @@ import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
 import org.springframework.web.servlet.HandlerMapping;
 
-import io.onceonly.util.OOUtils;
 import cn.mx.app.audit.repository.ReqLogRepository;
 import cn.mx.app.entity.ReqLog;
+import io.onceonly.util.OOUtils;
 
-@Aspect
+//@Aspect
 @Component
 public class WebRequestLogAspect {
 
@@ -32,12 +27,12 @@ public class WebRequestLogAspect {
     @Autowired
     private ReqLogRepository reqLogService;
 
-    @Pointcut("execution(public * cn.mx.app.controller.*.*(..))")
+  //  @Pointcut("execution(public * cn.mx.app.controller.*.*(..))")
     public void webRequestLog() {}
 
     //@Order(5)
-    @Before("webRequestLog()")
-    public void doBefore(JoinPoint joinPoint) {
+    //@Before("webRequestLog()")
+    public void doBefore() {
         try {
             long beginTime = System.currentTimeMillis();
             // 接收到请求，记录请求内容
@@ -50,7 +45,7 @@ public class WebRequestLogAspect {
             String method = request.getMethod();
             String params = "";
             if ("POST".equals(method)) {
-                Object[] paramsArray = joinPoint.getArgs();
+                Object[] paramsArray = null;// TODOrequest.getInputStream();
                 params = OOUtils.toJSON(paramsArray);
             } else {
                 Map<?, ?> paramsMap = (Map<?, ?>) request.getAttribute(HandlerMapping.URI_TEMPLATE_VARIABLES_ATTRIBUTE);
@@ -73,7 +68,7 @@ public class WebRequestLogAspect {
     }
 
     //@Order(5)
-    @AfterReturning(returning = "result", pointcut = "webRequestLog()")
+  //  @AfterReturning(returning = "result", pointcut = "webRequestLog()")
     public void doAfterReturning(Object result) {
         try {
             // 处理完请求，返回内容
@@ -82,7 +77,7 @@ public class WebRequestLogAspect {
             long beginTime = optLog.getBeginTime();
             long requestTime = System.currentTimeMillis() - beginTime ;
             optLog.setRequestTime(requestTime);
-            reqLogService.save(optLog);
+            reqLogService.insert(optLog);
         } catch (Exception e) {
             logger.error("***操作请求日志记录失败doAfterReturning()***", e);
         }

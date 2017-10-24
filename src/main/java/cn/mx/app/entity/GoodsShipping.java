@@ -2,13 +2,10 @@ package cn.mx.app.entity;
 
 import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Tbl;
+import io.onceonly.db.tbl.BaseEntity;
 
 @Tbl
 public class GoodsShipping extends BaseEntity {
-	/**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
 	@Col(ref=GoodsOrder.class, nullable = false)
 	private long goodsOrderId;
 	@Col(ref=UserChief.class,nullable = false)

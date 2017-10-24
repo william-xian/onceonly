@@ -2,13 +2,10 @@ package cn.mx.app.entity;
 
 import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Tbl;
+import io.onceonly.db.tbl.BaseEntity;
 
 @Tbl
 public class UserChief extends BaseEntity{
-    /**
-	 * 
-	 */
-	private static final long serialVersionUID = 1L;
     @Col(nullable = false, size=32,unique=true)
 	private String name;
     @Col(nullable = true, size=64)

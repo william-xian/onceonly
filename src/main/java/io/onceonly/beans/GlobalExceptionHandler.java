@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.bind.annotation.RestController;
 
+import io.onceonly.db.tbl.OOI18n;
 import io.onceonly.exception.Failed;
 import io.onceonly.util.OOUtils;
 
@@ -35,7 +36,7 @@ public class GlobalExceptionHandler {
     	String lang = locale == null ? null:locale.getLanguage();
     	if(lang != null && !lang.equals(Locale.getDefault().getLanguage())){
         	String id = "msg/"+lang+"_"+OOUtils.encodeMD5(failed.getFormat());	
-        	OOI18n i18n = i18nRepository.findOne(id);
+        	OOI18n i18n = i18nRepository.get(id);
         	if(i18n != null) {
         		defaultFromat  = i18n.getName();
         	}

@@ -23,14 +23,8 @@ import cn.mx.app.entity.UserChief;
 import cn.mx.app.entity.UserFriend;
 import cn.mx.app.entity.UserProfile;
 import cn.mx.app.entity.Wallet;
-import cn.mx.app.repository.GoodsDescRepository;
-import cn.mx.app.repository.GoodsOrderRepository;
-import cn.mx.app.repository.GoodsRepository;
-import cn.mx.app.repository.GoodsShippingRepository;
-import cn.mx.app.repository.UserChiefRepository;
-import cn.mx.app.repository.UserFriendRepository;
-import cn.mx.app.repository.UserProfileRepository;
-import cn.mx.app.repository.WalletRepository;
+import io.onceonly.db.dao.Dao;
+import io.onceonly.db.dao.impl.DaoImpl;
 
 
 /**
@@ -45,23 +39,24 @@ public class PerformanceCndOnJoinOrWhereTest {
 
 	@Autowired
 	private JdbcTemplate jdbcTemplate;
-	
+
 	@Autowired
-	private GoodsDescRepository goodsDescRepository;
+	private Dao<GoodsDesc,Long> goodsDescRepository = new DaoImpl<>();
 	@Autowired
-	private GoodsRepository goodsRepository;
+	private Dao<Goods,Long> goodsRepository = new DaoImpl<>();
 	@Autowired
-	private GoodsOrderRepository goodsOrderRepository;
+	private Dao<GoodsOrder,Long> goodsOrderRepository = new DaoImpl<>();
 	@Autowired
-	private GoodsShippingRepository goodsShippingRepository;
+	private Dao<GoodsShipping,Long> goodsShippingRepository = new DaoImpl<>();
+
 	@Autowired
-	private UserChiefRepository userChiefRepository;
+	private Dao<UserChief,Long> userChiefRepository = new DaoImpl<>();
 	@Autowired
-	private UserFriendRepository userFriendRepository;
+	private Dao<UserFriend,Long> userFriendRepository = new DaoImpl<>();
 	@Autowired
-	private UserProfileRepository userProfileRepository;
+	private Dao<UserProfile,Long> userProfileRepository = new DaoImpl<>();
 	@Autowired
-	private WalletRepository walletRepository;
+	private Dao<Wallet,Long> walletRepository = new DaoImpl<>();
 	
 	@Before
 	public void addUser() {
@@ -95,9 +90,9 @@ public class PerformanceCndOnJoinOrWhereTest {
 			w.setBalance(w.getIncome()-w.getExpenditure());
 			ws.add(w);
 		}
-		userChiefRepository.save(ucs);
-		userProfileRepository.save(ups);
-		walletRepository.save(ws);
+		userChiefRepository.insert(ucs);
+		userProfileRepository.insert(ups);
+		walletRepository.insert(ws);
 	}
 	
 	@Before
@@ -121,8 +116,8 @@ public class PerformanceCndOnJoinOrWhereTest {
 			up.setContent("content"+uniq);
 			gds.add(up);
 		}
-		goodsRepository.save(gs);
-		goodsDescRepository.save(gds);
+		goodsRepository.insert(gs);
+		goodsDescRepository.insert(gds);
 	}
 
 	@Before
@@ -147,7 +142,7 @@ public class PerformanceCndOnJoinOrWhereTest {
 			go.setFriendId((uid+10000-(id/10000)+1)%10000+1);
 			ufs.add(go);
 		}
-		userFriendRepository.save(ufs);
+		userFriendRepository.insert(ufs);
 	}
 	
 	@Before
@@ -177,8 +172,8 @@ public class PerformanceCndOnJoinOrWhereTest {
 			gss.add(g);
 			
 		}
-		goodsOrderRepository.save(gos);
-		goodsShippingRepository.save(gss);
+		goodsOrderRepository.insert(gos);
+		goodsShippingRepository.insert(gss);
 	}
 	
 	
