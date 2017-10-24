@@ -1,4 +1,4 @@
-package io.onceonly.db;
+package io.onceonly.db.meta;
 
 import java.lang.reflect.Field;
 import java.math.BigDecimal;

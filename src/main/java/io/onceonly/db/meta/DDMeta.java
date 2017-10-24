@@ -1,4 +1,4 @@
-package io.onceonly.db;
+package io.onceonly.db.meta;
 
 import java.util.Collection;
 import java.util.HashMap;

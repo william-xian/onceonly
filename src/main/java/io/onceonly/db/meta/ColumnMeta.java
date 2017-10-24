@@ -1,4 +1,4 @@
-package io.onceonly.db;
+package io.onceonly.db.meta;
 
 public class ColumnMeta {
 	String name;

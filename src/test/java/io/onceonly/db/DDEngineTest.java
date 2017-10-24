@@ -5,6 +5,8 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import io.onceonly.db.meta.DDEngine;
+import io.onceonly.db.meta.SqlParamData;
 import io.onceonly.util.OOUtils;
 
 public class DDEngineTest {

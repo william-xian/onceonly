@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import io.onceonly.db.meta.DDMeta;
+import io.onceonly.db.meta.TableMeta;
 import io.onceonly.util.OOAssert;
 import io.onceonly.util.OOUtils;
 

@@ -15,6 +15,7 @@ import cn.mx.app.entity.UserChief;
 import cn.mx.app.entity.UserFriend;
 import cn.mx.app.entity.UserProfile;
 import cn.mx.app.entity.Wallet;
+import io.onceonly.db.meta.TableMeta;
 
 public class Main {
 	static final Gson GSON = new GsonBuilder().serializeNulls().setPrettyPrinting().create();

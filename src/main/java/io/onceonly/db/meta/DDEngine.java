@@ -1,4 +1,4 @@
-package io.onceonly.db;
+package io.onceonly.db.meta;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -292,8 +292,8 @@ public class DDEngine {
 				for(int i = 1; i < deps.length; i++) {
 					DDMeta meta = aliasToMeta.get(deps[i]);
 					/** 如果存在中间表去除重复 */
-					if(spoor.contains(meta.name)) continue;
-					spoor.add(meta.name);
+					if(spoor.contains(meta.getName())) continue;
+					spoor.add(meta.getName());
 					DDMeta dependMeta  = aliasToMeta.get(depend);
 					String rel = relMap.get(meta.getName()).get(dependMeta.getName());
 					sql.append(String.format("\nleft join %s %s on %s", meta.getTable(),meta.getName(),rel));
