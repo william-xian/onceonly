@@ -1,4 +1,4 @@
-package io.onceonly.db;
+package cn.mx.app.entity;
 
 import java.io.Serializable;
 

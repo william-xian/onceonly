@@ -4,13 +4,13 @@ import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Tbl;
 
 @Tbl
-public final class OODDMeta {
+public final class OODDMeta extends BaseEntity {
 	@Col(size=32,nullable=true)
 	private String tag;
 	@Col(nullable=true,colDef="TEXT")
 	private String path;
 	@Col(nullable=false,colDef="TEXT")
-	private String content;
+	private String val;
 	@Col(nullable=true)
 	private Long createtime;
 	
@@ -26,11 +26,12 @@ public final class OODDMeta {
 	public void setPath(String path) {
 		this.path = path;
 	}
-	public String getContent() {
-		return content;
+	
+	public String getVal() {
+		return val;
 	}
-	public void setContent(String content) {
-		this.content = content;
+	public void setVal(String val) {
+		this.val = val;
 	}
 	public Long getCreatetime() {
 		return createtime;

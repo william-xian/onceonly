@@ -1,6 +1,5 @@
 package cn.mx.app.entity;
 
-import io.onceonly.db.BaseEntity;
 import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Tbl;
 

@@ -8,7 +8,7 @@ public final class OOTableMeta extends BaseEntity{
 	@Col(size=32,nullable=true)
 	private String tag;
 	@Col(nullable=false,colDef="TEXT")
-	private String content;
+	private String val;
 	@Col(nullable=true)
 	private Long createtime;
 	public String getTag() {
@@ -17,11 +17,11 @@ public final class OOTableMeta extends BaseEntity{
 	public void setTag(String tag) {
 		this.tag = tag;
 	}
-	public String getContent() {
-		return content;
+	public String getVal() {
+		return val;
 	}
-	public void setContent(String content) {
-		this.content = content;
+	public void setVal(String val) {
+		this.val = val;
 	}
 	public Long getCreatetime() {
 		return createtime;

@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import io.onceonly.db.BaseEntity;
+import cn.mx.app.entity.BaseEntity;
 
 /**
  * 内存间表关联
