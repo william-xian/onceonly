@@ -8,9 +8,7 @@ public interface Dao<T,ID> {
 	T insert(T entity);
 	int insert(List<T> entities);
 	int update(T entity);
-	int update(T entity,String pattern);
 	int updateIgnoreNull(T entity);
-	int updateIgnore(T entity,String pattern);
 	int updateIncrement(T increment);
 	int remove(ID id);
 	int remove(List<ID> ids);
@@ -24,7 +22,7 @@ public interface Dao<T,ID> {
 	 */
 	Page<T> findByEntity(T entity,Integer page,Integer pageSize);
 	
-	int update(T newVal,String pattern,Cnd cnd);
+	int update(T newVal,String pattern,Cnd<T> cnd);
 	/**
 	 * 对于字符串，将会被拼接起来
 	 * 对于数值进行累计
@@ -33,15 +31,15 @@ public interface Dao<T,ID> {
 	 * @param cnd
 	 * @return
 	 */
-	int updateIncrement(T increment,Cnd cnd);
+	int updateIncrement(T increment,Cnd<T> cnd);
 	/** 数值型数据做异或运算 */
-	int updateXOR(T arg,Cnd cnd);
-	int remove(Cnd cnd);
-	int delete(Cnd cnd);
-	Page<T> search(Cnd cnd);
-	List<T> find(Cnd cnd);
-	void download(Cnd cnd,Consumer<T> consumer);
+	int updateXOR(T arg,Cnd<T> cnd);
+	int remove(Cnd<T> cnd);
+	int delete(Cnd<T> cnd);
+	Page<T> search(Cnd<T> cnd);
+	List<T> find(Cnd<T> cnd);
+	void download(Cnd<T> cnd,Consumer<T> consumer);
 	
 	long count();
-	long count(Cnd cnd);
+	long count(Cnd<T> cnd);
 }

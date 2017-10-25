@@ -10,7 +10,8 @@ import io.onceonly.db.dao.Dao;
 import io.onceonly.db.dao.Page;
 
 
-public class DaoImpl<T,ID> implements Dao<T,ID> {
+public class DaoImpl<E,ID> implements Dao<E,ID> {
+	
 	private JdbcTemplate jdbcTemplate;
 	
 	public JdbcTemplate getJdbcTemplate() {
@@ -22,49 +23,37 @@ public class DaoImpl<T,ID> implements Dao<T,ID> {
 	}
 
 	@Override
-	public T get(ID id) {
+	public E get(ID id) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public T insert(T entity) {
+	public E insert(E entity) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public int insert(List<T> entities) {
+	public int insert(List<E> entities) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
-	public int update(T entity) {
+	public int update(E entity) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
-	public int update(T entity, String pattern) {
+	public int updateIgnoreNull(E entity) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
-	public int updateIgnoreNull(T entity) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int updateIgnore(T entity, String pattern) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int updateIncrement(T increment) {
+	public int updateIncrement(E increment) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
@@ -88,43 +77,61 @@ public class DaoImpl<T,ID> implements Dao<T,ID> {
 	}
 
 	@Override
-	public int update(T newVal, String pattern, Cnd cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int updateIncrement(T increment, Cnd cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int updateXOR(T arg, Cnd cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int remove(Cnd cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int delete(Cnd cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public Page<T> search(Cnd cnd) {
+	public List<E> findByIds(List<ID> ids) {
 		// TODO Auto-generated method stub
 		return null;
 	}
 
 	@Override
-	public void download(Cnd cnd, Consumer<T> consumer) {
+	public Page<E> findByEntity(E entity, Integer page, Integer pageSize) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public int update(E newVal, String pattern, Cnd<E> cnd) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int updateIncrement(E increment, Cnd<E> cnd) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int updateXOR(E arg, Cnd<E> cnd) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int remove(Cnd<E> cnd) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int delete(Cnd<E> cnd) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public Page<E> search(Cnd<E> cnd) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<E> find(Cnd<E> cnd) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public void download(Cnd<E> cnd, Consumer<E> consumer) {
 		// TODO Auto-generated method stub
 		
 	}
@@ -136,27 +143,10 @@ public class DaoImpl<T,ID> implements Dao<T,ID> {
 	}
 
 	@Override
-	public long count(Cnd cnd) {
+	public long count(Cnd<E> cnd) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
 
-	@Override
-	public List<T> find(Cnd cnd) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public List<T> findByIds(List<ID> ids) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public Page<T> findByEntity(T entity, Integer page, Integer pageSize) {
-		// TODO Auto-generated method stub
-		return null;
-	}
 
 }

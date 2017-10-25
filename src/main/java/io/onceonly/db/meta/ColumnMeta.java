@@ -1,5 +1,7 @@
 package io.onceonly.db.meta;
 
+import java.lang.reflect.Field;
+
 public class ColumnMeta {
 	String name;
 	String type;
@@ -10,11 +12,11 @@ public class ColumnMeta {
 	boolean useFK;
 	String using;
 	boolean primaryKey;
-	
 	/**
 	 * 正则表达式 或@JSON,@Email等特定教研
 	 */
 	String pattern;
+	transient Field field;
 	public String getName() {
 		return name;
 	}
@@ -75,4 +77,11 @@ public class ColumnMeta {
 	public void setPrimaryKey(boolean primaryKey) {
 		this.primaryKey = primaryKey;
 	}
+	public Field getField() {
+		return field;
+	}
+	public void setField(Field field) {
+		this.field = field;
+	}
+	
 }

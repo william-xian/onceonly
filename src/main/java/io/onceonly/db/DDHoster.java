@@ -15,18 +15,19 @@ import io.onceonly.util.OOUtils;
 public class DDHoster {
 	public static final Map<String,Class<?>> tableToEntity = new HashMap<>();
 	public static final List<TableMeta> oldTableMeta = new ArrayList<>();
-	public static final Map<String,TableMeta> tableToTableMeta= new HashMap<>();
+	public static final Map<String,TableMeta> tableToTableMeta = new HashMap<>();
 	public static final Map<String,DDMeta> tableToDDMeta = new HashMap<>();
 	public static final List<TableMeta> missTableMeta = new ArrayList<>(0);
 	public static final Map<String,List<String>> family = new HashMap<>();
 	public static final Map<String,String> sonToFather = new HashMap<>();
 	
 	public static void putEntity(Class<?> entity) {
-		String table = entity.getName();
+		String table = entity.getSimpleName();
 		if(!tableToEntity.containsKey(table)) {
 			TableMeta tm = TableMeta.createBy(entity);
 			if(tm != null) {
 				tableToEntity.put(table, entity);
+				tm.freshNameToField();
 				tableToTableMeta.put(table, tm);		
 			}			
 		}
@@ -44,6 +45,7 @@ public class DDHoster {
 		for(TableMeta oldtm:oldTableMeta){
 			TableMeta newtm = tableToTableMeta.get(oldtm.getTable());
 			if(newtm != null && !newtm.equals(oldtm)) {
+				newtm.freshNameToField();
 				tableToTableMeta.put(newtm.getTable(), newtm);
 				sqlTask.addAll(oldtm.upgradeTo(newtm));
 				needToAdd.remove(newtm.getTable());

@@ -1,21 +1,26 @@
 package io.onceonly.db.dao;
 
 import java.lang.reflect.Field;
+import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Consumer;
 
 import org.springframework.dao.DataAccessException;
+import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowMapper;
 
+import io.onceonly.db.meta.ColumnMeta;
 import io.onceonly.db.meta.DDMeta;
 import io.onceonly.db.meta.TableMeta;
 import io.onceonly.util.OOAssert;
+import io.onceonly.util.Tuple2;
 
 public class DaoHelper {
 	private JdbcTemplate jdbcTemplate;
@@ -59,7 +64,7 @@ public class DaoHelper {
 		this.nameToDDMata = nameToDDMata;
 	}
 	
-	public <T> boolean createOrUpdate(Class<T> tbl) {
+	public <E> boolean createOrUpdate(Class<E> tbl) {
 		TableMeta old = nameToTableMata.get(tbl.getSimpleName());
 		if(old == null) {
 			old = TableMeta.createBy(tbl);
@@ -83,7 +88,7 @@ public class DaoHelper {
 		return false;
 	}
 
-	public <T> boolean drop(Class<T> tbl) {
+	public <E> boolean drop(Class<E> tbl) {
 		TableMeta tm = nameToTableMata.get(tbl.getSimpleName());
 		if(tm == null) {
 			return false;
@@ -101,18 +106,18 @@ public class DaoHelper {
 		return jdbcTemplate.batchUpdate(sql, batchArgs);
 	}
 	
-	private <T> RowMapper<T> genRowMapper(Class<T> tbl,TableMeta tm) {
-		RowMapper<T> rowMapper = new RowMapper<T>(){
+	private <E> RowMapper<E> genRowMapper(Class<E> tbl,TableMeta tm) {
+		RowMapper<E> rowMapper = new RowMapper<E>(){
 			@Override
-			public T mapRow(ResultSet rs, int rowNum) throws SQLException {
-				T row = null;
+			public E mapRow(ResultSet rs, int rowNum) throws SQLException {
+				E row = null;
 				if(rs.next()) {
 					try {
 						row = tbl.newInstance();
-						Map<String,Field> nameToField = tm.getNameToField();
-						for(String fieldName:nameToField.keySet()) {
-							Field field = nameToField.get(fieldName);
-							Object val = rs.getObject(fieldName, field.getType());
+						List<ColumnMeta> columnMetas = tm.getColumnMetas();
+						for(ColumnMeta colMeta:columnMetas) {
+							Field field = colMeta.getField();
+							Object val = rs.getObject(colMeta.getName(), field.getType());
 							field.set(row, val);
 						}
 						
@@ -127,12 +132,12 @@ public class DaoHelper {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public <T,ID> T get(Class<T> tbl,ID id) {
+	public <E,ID> E get(Class<E> tbl,ID id) {
 		TableMeta tm = nameToTableMata.get(tbl.getSimpleName());
 		if(tm == null) {
 			return null;
 		}
-		RowMapper<T> rowMapper = null;
+		RowMapper<E> rowMapper = null;
 		if(!nameToRowMapper.containsKey(tbl.getSimpleName())) {
 			rowMapper = genRowMapper(tbl,tm);
 			nameToRowMapper.put(tbl.getSimpleName(), rowMapper);
@@ -140,138 +145,192 @@ public class DaoHelper {
 			rowMapper = nameToRowMapper.get(tbl.getSimpleName());	
 		}
 		String sql = String.format("SELECT * FROM %s WHERE %s = (?)", tm.getTable(),tm.getPrimaryKey());
-		List<T> values = jdbcTemplate.query(sql, new Object[]{id}, rowMapper);
+		List<E> values = jdbcTemplate.query(sql, new Object[]{id}, rowMapper);
 		if(values.size() == 1){
 			return values.get(0);
 		}
 		return null;
 	}
 	
+	private <E> Tuple2<List<String>,List<List<Object>>> fetchNamesValues(List<ColumnMeta> columnMetas,boolean ignoreNull,List<E> entities) {
+		List<String> names = new ArrayList<>(columnMetas.size());
+		List<List<Object>> valsList = new ArrayList<>(entities.size());
+		boolean hasNames = false;
+		for(E entity:entities) {
+			if(entity == null) continue;
+			List<Object> vals = new ArrayList<>(columnMetas.size());
+			valsList.add(vals);
+			for(ColumnMeta cm:columnMetas) {
+				if(!hasNames) {
+					names.add(cm.getName());	
+				}
+				try {
+					Object val = cm.getField().get(entity);
+					if(val != null || !ignoreNull) {
+						vals.add(val);
+					}
+				} catch (IllegalArgumentException | IllegalAccessException e) {
+					OOAssert.warnning("%s.%s 访问异常:%s", entity.getClass().getSimpleName(),cm.getName(),e.getMessage());
+				}
+			}
+			hasNames = true;
+		}
+		return new Tuple2<List<String>,List<List<Object>>>(names,valsList);
+	}
+	public static String genStub(String e,String s,int cnt) {
+		StringBuffer sb = new StringBuffer((e.length() + s.length()) * cnt);
+		for(int i=0; i < cnt-1; i++) {
+			sb.append(e);
+			sb.append(s);
+		}
+		if(cnt > 0) {
+			sb.append(e);
+		}
+		return sb.toString();
+	}
 	
+	public <E> E insert(E entity) {
+		OOAssert.warnning(entity != null,"不可以插入null");
+		Class<?> tbl = entity.getClass();
+		TableMeta tm = nameToTableMata.get(tbl.getSimpleName());	
+		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
+		Tuple2<List<String>,List<List<Object>>>  nameVals = fetchNamesValues(tm.getColumnMetas(),false,Arrays.asList(entity));
+		List<Object> vals = nameVals.b.get(0);
+		String stub = genStub("?",",",nameVals.a.size());
+		String sql = String.format("INSERT INTO %s(%s) VALUES(%s);", tm.getTable(),String.join(",", nameVals.a),stub);
+		jdbcTemplate.update(sql, vals.toArray());
+		return entity;
+	}
+	
+	public <E> int insert(List<E> entities) {
+		OOAssert.warnning(entities != null && !entities.isEmpty(),"不可以插入null");
+		Class<?> tbl = entities.get(0).getClass();
+		TableMeta tm = nameToTableMata.get(tbl.getSimpleName());
+		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
+		Tuple2<List<String>,List<List<Object>>>  nameVals = fetchNamesValues(tm.getColumnMetas(),false,entities);
+		String stub = genStub("?",",",nameVals.a.size());
+		String sql = String.format("INSERT INTO %s(%s) VALUES(%s);", tm.getTable(),String.join(",", nameVals.a),stub);
+		
+		int[] cnts = jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+			@Override
+			public void setValues(PreparedStatement ps, int i) throws SQLException {
+				List<Object> vals = nameVals.b.get(i);
+				for(int vi = 0;  vi < vals.size(); vi++) {
+					ps.setObject(vi+1, vals.get(vi));
+				}
+			}
+			@Override
+			public int getBatchSize() {
+				return entities.size();
+			}
+			
+		});
+		int cnt = 0;
+		for(int c:cnts) {
+			cnt += c;
+		}
+		return cnt;
+	}
 
-	public <T> T insert(T entity) {
+	public <E> int update(E entity) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public <E> int updateIgnoreNull(E entity) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public <E> int updateIncrement(E increment) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public <E,ID> int remove(Class<E> tbl,ID id) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public <E,ID> int remove(Class<E> tbl, List<ID> ids) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public <E,ID> int delete(Class<E> tbl, ID id) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+	
+	public <E> int update(E newVal, String pattern, Cnd<E> cnd) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public <E> int updateIncrement(E increment, Cnd<E> cnd) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public <E> int updateXOR(E arg, Cnd<E> cnd) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public <E> int remove(Class<E> tbl, Cnd<E> cnd) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public <E> int delete(Class<E> tbl,Cnd<E> cnd) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	public <E> Page<E> search(Class<E> tbl,Cnd<E> cnd) {
 		// TODO Auto-generated method stub
 		return null;
 	}
-	
-	public <T> int insert(List<T> entities) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
 
-	public <T> int update(T entity) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	public <T> int update(T entity, String pattern) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	public <T> int updateIgnoreNull(T entity) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	public <T> int updateIgnore(T entity, String pattern) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	public <T> int updateIncrement(T increment) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	public <T,ID> int remove(Class<T> tbl,ID id) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	public <T,ID> int remove(Class<T> tbl, List<ID> ids) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	public <T,ID> int delete(Class<T> tbl, ID id) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-	
-	public <T> int update(T newVal, String pattern, Cnd cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	public <T> int updateIncrement(T increment, Cnd cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	public <T> int updateXOR(T arg, Cnd cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	public <T> int remove(Class<T> tbl, Cnd cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	public <T> int delete(Class<T> tbl,Cnd cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	public <T> Page<T> search(Class<T> tbl,Cnd cnd) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	public <T> void download(Cnd cnd, Consumer<T> consumer) {
+	public <E> void download(Cnd<E> cnd, Consumer<E> consumer) {
 		// TODO Auto-generated method stub
 		
 	}
 
-	public <T> long count(Class<T> tbl) {
+	public <E> long count(Class<E> tbl) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
 
-	public <T> long count(Class<T> tbl, Cnd cnd) {
+	public <E> long count(Class<E> tbl, Cnd<E> cnd) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
 
-	public <T> List<T> find(Class<T> tbl, Cnd cnd) {
+	public <E> List<E> find(Class<E> tbl, Cnd<E> cnd) {
 		return null;
 	}
 	@SuppressWarnings("unchecked")
-	public <T,ID> List<T> findByIds(Class<T> tbl, List<ID> ids) {
+	public <E,ID> List<E> findByIds(Class<E> tbl, List<ID> ids) {
 		if(ids.isEmpty()) {
-			return new ArrayList<T>();
+			return new ArrayList<E>();
 		}
 		TableMeta tm = nameToTableMata.get(tbl.getSimpleName());
 		if(tm == null) {
 		}
-		RowMapper<T> rowMapper = null;
+		RowMapper<E> rowMapper = null;
 		if(!nameToRowMapper.containsKey(tbl.getSimpleName())) {
 			rowMapper = genRowMapper(tbl,tm);
 			nameToRowMapper.put(tbl.getSimpleName(), rowMapper);
 		}else {
 			rowMapper = nameToRowMapper.get(tbl.getSimpleName());	
 		}
-		StringBuffer sb = new StringBuffer(ids.size()*2);
-		for(int i = 0; i < ids.size(); i++) {
-			sb.append("?,");
-		}
-		sb.deleteCharAt(sb.length()-1);
-		String sql = String.format("SELECT * FROM %s WHERE %s in (%s)", tm.getTable(),tm.getPrimaryKey());
-		List<T> values = jdbcTemplate.query(sql, ids.toArray(), rowMapper);
+		String stub = genStub("?",",",ids.size());
+		String sql = String.format("SELECT * FROM %s WHERE %s in (%s)", tm.getTable(),tm.getPrimaryKey(),stub);
+		List<E> values = jdbcTemplate.query(sql, ids.toArray(), rowMapper);
 		return values;
 	}
-	public <T> Page<T> findByEntity(T entity, Integer page, Integer pageSize) {
+	public <E> Page<E> findByEntity(E entity, Integer page, Integer pageSize) {
 		// TODO Auto-generated method stub
 		return null;
 	}

@@ -10,8 +10,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Constraint;
 import io.onceonly.db.annotation.ConstraintType;
@@ -29,10 +27,7 @@ public class TableMeta {
 	List<ConstraintMeta> fieldConstraint = new ArrayList<>(0);
 	List<ConstraintMeta> constraints;
 	List<ColumnMeta> columnMetas = new ArrayList<>(0);
-	@JsonIgnore
-	Map<String,Field> nameToField = new HashMap<>();
-	@JsonIgnore
-	Map<String,ColumnMeta> nameToColumnMeta = new HashMap<>();
+	transient Map<String,ColumnMeta> nameToColumnMeta = new HashMap<>();
 	public String getTable() {
 		return table;
 	}
@@ -83,8 +78,8 @@ public class TableMeta {
 	public void setConstraints(List<ConstraintMeta> constraints) {
 		this.constraints = constraints;
 	}
-	public Map<String, ColumnMeta> getNameToColumnMeta() {
-		return nameToColumnMeta;
+	public ColumnMeta getColumnMetaByName(String colName) {
+		return nameToColumnMeta.get(colName);
 	}
 	public void setColumnMetas(List<ColumnMeta> columnMetas) {
 		this.columnMetas = columnMetas;
@@ -94,13 +89,6 @@ public class TableMeta {
 			this.nameToColumnMeta.put(cm.name, cm);
 		}
 		freshConstraintMetaTable();
-	}
-	
-	public Map<String, Field> getNameToField() {
-		return nameToField;
-	}
-	public void setNameToField(Map<String, Field> nameToField) {
-		this.nameToField = nameToField;
 	}
 	public void freshNameToField() {
 		try {
@@ -113,8 +101,10 @@ public class TableMeta {
 			
 			for(Class<?> clazz:classes) {
 				for(Field field:clazz.getDeclaredFields()){
-					if(nameToColumnMeta.containsKey(field.getName())){
-						nameToField.put(field.getName(), field);
+					ColumnMeta cm = nameToColumnMeta.get(field.getName());
+					if(cm != null){
+						field.setAccessible(true);
+						cm.setField(field);
 						missed.remove(field.getName());
 					}
 				}	
