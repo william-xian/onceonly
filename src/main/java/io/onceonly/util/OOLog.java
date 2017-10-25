@@ -11,7 +11,7 @@ public class OOLog {
 		String msg = String.format(format, args);
 		System.out.printf("%s DEBUG %s  %s",SDF.format(new Date()), location,msg);
 	}
-	public static void log(String format,Object ...args) {
+	public static void info(String format,Object ...args) {
 		StackTraceElement curStack =  Thread.currentThread().getStackTrace()[2];
 		String location = curStack.getFileName() + ":" + curStack.getLineNumber();
 		String msg = String.format(format, args);

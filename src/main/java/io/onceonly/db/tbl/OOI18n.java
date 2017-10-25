@@ -1,6 +1,6 @@
 package io.onceonly.db.tbl;
 
-import io.onceonly.annotation.I18nConst;
+import io.onceonly.annotation.I18nCfg;
 import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.OId;
 import io.onceonly.db.annotation.Tbl;
@@ -43,7 +43,7 @@ public class OOI18n {
 	}
 	
 	public static String constId(String lang,Class<?> clazz,String fieldName) {
-		I18nConst group = clazz.getAnnotation(I18nConst.class);
+		I18nCfg group = clazz.getAnnotation(I18nCfg.class);
 		return "const/" + group.value()+ "_"+ clazz.getSimpleName() + "_" + fieldName;
 	}
 }

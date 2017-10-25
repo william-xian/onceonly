@@ -13,8 +13,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 
-import io.onceonly.annotation.Const;
-import io.onceonly.annotation.I18nConst;
+import io.onceonly.annotation.I18nCfgBrief;
+import io.onceonly.annotation.I18nCfg;
 import io.onceonly.annotation.I18nMsg;
 import io.onceonly.db.tbl.OOI18n;
 import io.onceonly.exception.Failed;
@@ -31,7 +31,7 @@ public class StartupRunner implements CommandLineRunner {
     @Value("${cn.dls.packages}")
     private String packages;
     
-    private final static AnnotationScanner annotations = new AnnotationScanner(OOI18n.class,I18nMsg.class,I18nConst.class);
+    private final static AnnotationScanner annotations = new AnnotationScanner(OOI18n.class,I18nMsg.class,I18nCfg.class);
  
     private void loadI18nToCache(){
         Iterable<OOI18n> i18ns = i18nRepository.find(null);
@@ -69,19 +69,19 @@ public class StartupRunner implements CommandLineRunner {
     }
 
     private void annlysisConst(){
-    	Set<Class<?>> classes = annotations.getClasses(I18nConst.class);
+    	Set<Class<?>> classes = annotations.getClasses(I18nCfg.class);
     	if(classes == null) return;
     	List<OOI18n> i18ns = new ArrayList<>();
     	for(Class<?>clazz:classes){
-    		I18nConst group = clazz.getAnnotation(I18nConst.class);
+    		I18nCfg group = clazz.getAnnotation(I18nCfg.class);
     		for(Field field:clazz.getFields()){
     			field.setAccessible(true);
-    			Const cons = field.getAnnotation(Const.class);
+    			I18nCfgBrief cons = field.getAnnotation(I18nCfgBrief.class);
     			try {
 					String fieldname = field.getName();
 					String val = field.get(null).toString();
 					String id = "const/" + group.value()+ "_"+ clazz.getSimpleName() + "_" + fieldname;
-					String name = cons.name();
+					String name = cons.value();
 					OOI18n i18n = i18nRepository.get(id);
 					if(i18n == null) {
 						i18n = new OOI18n();

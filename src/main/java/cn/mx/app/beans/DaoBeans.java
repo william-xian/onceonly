@@ -16,7 +16,6 @@ public class DaoBeans {
 	@Bean
 	public JdbcTemplate createJdbcTemplate() {
 		JdbcTemplate jdbcTemplate = new JdbcTemplate(dataSource);
-		System.err.println("jdbcTemplate-" + jdbcTemplate);
 		return jdbcTemplate;
 	}
 	

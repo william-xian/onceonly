@@ -8,13 +8,11 @@ import java.lang.annotation.Target;
 
 
 /**
- * 被标注的字段回被添加到i18n表中，id=c/类名_字段名
- * @author Administrator
- *
+ * 配置字段的描述信息
  */
-@Target({ElementType.TYPE,ElementType.FIELD })
+@Target({ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
 @Inherited
-public @interface Const {
-	String name() default "";
+public @interface I18nCfgBrief {
+	String value() default "";
 }

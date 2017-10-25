@@ -20,7 +20,7 @@ public class WebRequestFilter implements Filter{
     public void init(FilterConfig filterConfig) throws ServletException {
 
     }
-
+    //private ThreadLocal<ReqLog> tlocal = new ThreadLocal<ReqLog>();
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain filterChain) throws IOException, ServletException {
     	if(response instanceof HttpServletResponse) {
