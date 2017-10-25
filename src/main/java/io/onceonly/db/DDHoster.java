@@ -45,7 +45,7 @@ public class DDHoster {
 			TableMeta newtm = tableToTableMeta.get(oldtm.getTable());
 			if(newtm != null && !newtm.equals(oldtm)) {
 				tableToTableMeta.put(newtm.getTable(), newtm);
-				sqlTask.add(oldtm.upgradeTo(newtm));
+				sqlTask.addAll(oldtm.upgradeTo(newtm));
 				needToAdd.remove(newtm.getTable());
 			}else if(newtm == null) {
 				missTableMeta.add(oldtm);
@@ -53,7 +53,7 @@ public class DDHoster {
 		}
 		for(String newtable:needToAdd) {
 			TableMeta newtm = tableToTableMeta.get(newtable);
-			sqlTask.add(newtm.createTableSql());
+			sqlTask.addAll(newtm.createTableSql());
 		}
 		
 		updateRelation();

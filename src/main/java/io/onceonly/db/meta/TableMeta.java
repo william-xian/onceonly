@@ -17,14 +17,20 @@ import io.onceonly.db.annotation.Constraint;
 import io.onceonly.db.annotation.ConstraintType;
 import io.onceonly.db.annotation.OId;
 import io.onceonly.db.annotation.Tbl;
+import io.onceonly.util.OOAssert;
+import io.onceonly.util.OOLog;
+import io.onceonly.util.OOUtils;
 
 public class TableMeta {
 	String table;
 	String extend;
+	String entity;
 	ConstraintMeta primaryKey;
 	List<ConstraintMeta> fieldConstraint = new ArrayList<>(0);
 	List<ConstraintMeta> constraints;
 	List<ColumnMeta> columnMetas = new ArrayList<>(0);
+	@JsonIgnore
+	Map<String,Field> nameToField = new HashMap<>();
 	@JsonIgnore
 	Map<String,ColumnMeta> nameToColumnMeta = new HashMap<>();
 	public String getTable() {
@@ -34,7 +40,12 @@ public class TableMeta {
 		this.table = table;
 		freshConstraintMetaTable();
 	}
-	
+	public String getEntity() {
+		return entity;
+	}
+	public void setEntity(String entity) {
+		this.entity = entity;
+	}
 	public String getExtend() {
 		return extend;
 	}
@@ -72,7 +83,7 @@ public class TableMeta {
 	public void setConstraints(List<ConstraintMeta> constraints) {
 		this.constraints = constraints;
 	}
-	public Map<String, ColumnMeta> getColumnMeta() {
+	public Map<String, ColumnMeta> getNameToColumnMeta() {
 		return nameToColumnMeta;
 	}
 	public void setColumnMetas(List<ColumnMeta> columnMetas) {
@@ -85,6 +96,36 @@ public class TableMeta {
 		freshConstraintMetaTable();
 	}
 	
+	public Map<String, Field> getNameToField() {
+		return nameToField;
+	}
+	public void setNameToField(Map<String, Field> nameToField) {
+		this.nameToField = nameToField;
+	}
+	public void freshNameToField() {
+		try {
+			Class<?> tblEntity = this.getClass().getClassLoader().loadClass(entity);
+			List<Class<?>> classes = new ArrayList<>();
+			for(Class<?> clazz = tblEntity;!clazz.equals(Object.class);clazz=clazz.getSuperclass()) {
+				classes.add(0, clazz);
+			}
+			Set<String> missed = new HashSet<>(nameToColumnMeta.keySet());
+			
+			for(Class<?> clazz:classes) {
+				for(Field field:clazz.getDeclaredFields()){
+					if(nameToColumnMeta.containsKey(field.getName())){
+						nameToField.put(field.getName(), field);
+						missed.remove(field.getName());
+					}
+				}	
+			}
+			if(!missed.isEmpty()) {
+				OOLog.warnning("以下字段没有加载到Field %s", OOUtils.toJSON(missed));
+			}
+		} catch (ClassNotFoundException e) {
+			OOAssert.fatal("无法加载 %s", entity);
+		}
+	}
 	private void freshConstraintMetaTable() {
 		if(columnMetas != null && !columnMetas.isEmpty()) {
 			fieldConstraint = new ArrayList<>(columnMetas.size());
@@ -115,24 +156,25 @@ public class TableMeta {
 		}
 	}
 	
-	private String alterColumnSql(List<ColumnMeta> columnMetas) {
-		StringBuffer sql = new StringBuffer();
+	private List<String> alterColumnSql(List<ColumnMeta> columnMetas) {
+		List<String> sqls = new ArrayList<>();
 		for(ColumnMeta ocm:columnMetas) {
-			sql.append(String.format("ALTER TABLE %s ALTER %s %s%s;",table, ocm.name,ocm.type, ocm.nullable?"":" not null"));	
+			sqls.add(String.format("ALTER TABLE %s ALTER %s %s%s;",table, ocm.name,ocm.type, ocm.nullable?"":" not null"));	
 		}
-		return sql.toString();
+		return sqls;
 	}
-	private String addColumnSql(List<ColumnMeta> columnMetas) {
-		StringBuffer sql = new StringBuffer();
+	private List<String> addColumnSql(List<ColumnMeta> columnMetas) {
+		List<String> sqls = new ArrayList<>();
 		for(ColumnMeta ocm:columnMetas) {
-			sql.append(String.format("ALTER TABLE %s ADD %s %s%s;",table, ocm.name,ocm.type, ocm.nullable?"":" not null"));	
+			sqls.add(String.format("ALTER TABLE %s ADD %s %s%s;",table, ocm.name,ocm.type, ocm.nullable?"":" not null"));	
 		}
-		return sql.toString();
+		return sqls;
 	}
 
 	
 	/** drop table if exists tbl_a;*/
-	public String createTableSql() {
+	public List<String> createTableSql() {
+		List<String> sqls = new ArrayList<>();
 		StringBuffer tbl = new StringBuffer();
 		tbl.append(String.format("CREATE TABLE %s (", table));
 		for(ColumnMeta cm:columnMetas) {
@@ -140,12 +182,13 @@ public class TableMeta {
 		}
 		tbl.delete(tbl.length()-1, tbl.length());
 		tbl.append(");");
+		sqls.add(tbl.toString());
 		if(primaryKey != null) {
-			tbl.append(primaryKey.addSql());
+			sqls.add(primaryKey.addSql());
 		}
 		/** 添加复合约束 */
-		tbl.append(ConstraintMeta.addConstraintSql(fieldConstraint));
-		return tbl.toString();
+		sqls.addAll(ConstraintMeta.addConstraintSql(fieldConstraint));
+		return sqls;
 	}
 
 	/**
@@ -153,11 +196,11 @@ public class TableMeta {
 	 * @param other
 	 * @return
 	 */
-	public String upgradeTo(TableMeta other) {
+	public List<String> upgradeTo(TableMeta other) {
 		if(!table.equals(other.table)) {
 			return null;
 		}
-		StringBuffer sql = new StringBuffer();
+		List<String> sqls = new ArrayList<>();
 		List<ColumnMeta> otherColumn = other.columnMetas;
 		List<ColumnMeta> newColumns = new ArrayList<>();
 		List<ConstraintMeta> dropIndexs = new ArrayList<>();
@@ -224,20 +267,20 @@ public class TableMeta {
 			}
 		}
 		if(primaryKey != null && primaryKey.equals(other.primaryKey)) {
-			sql.append(primaryKey.dropSql());
+			sqls.add(primaryKey.dropSql());
 		}
 		if(other.primaryKey != null && other.primaryKey.equals(primaryKey)) {
-			sql.append(other.primaryKey.addSql());
+			sqls.add(other.primaryKey.addSql());
 		}
-		sql.append(addColumnSql(newColumns));
+		sqls.addAll(addColumnSql(newColumns));
 		
-		sql.append(ConstraintMeta.dropConstraintSql(dropIndexs));
-		sql.append(ConstraintMeta.dropConstraintSql(dropForeignKeys));
-		sql.append(alterColumnSql(alterColumns));
-		sql.append(ConstraintMeta.addConstraintSql(addForeignKeys));
-		sql.append(ConstraintMeta.dropConstraintSql(dropUniqueConstraint));
-		sql.append(ConstraintMeta.addConstraintSql(addUniqueConstraint));
-		return sql.length() == 0 ? null:sql.toString();
+		sqls.addAll(ConstraintMeta.dropConstraintSql(dropIndexs));
+		sqls.addAll(ConstraintMeta.dropConstraintSql(dropForeignKeys));
+		sqls.addAll(alterColumnSql(alterColumns));
+		sqls.addAll(ConstraintMeta.addConstraintSql(addForeignKeys));
+		sqls.addAll(ConstraintMeta.dropConstraintSql(dropUniqueConstraint));
+		sqls.addAll(ConstraintMeta.addConstraintSql(addUniqueConstraint));
+		return sqls;
 	}
 	/**
 	 * TODO
@@ -256,6 +299,7 @@ public class TableMeta {
 		}
 		TableMeta tm = new TableMeta();
 		tm.table = entity.getSimpleName();
+		tm.entity = entity.getName();
 		List<ConstraintMeta> constraints =  new ArrayList<>();
 		for(Constraint c:tbl.constraints()) {
 			ConstraintMeta cm = new ConstraintMeta();

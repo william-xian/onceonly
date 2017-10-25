@@ -14,8 +14,15 @@ public interface Dao<T,ID> {
 	int updateIncrement(T increment);
 	int remove(ID id);
 	int remove(List<ID> ids);
-	
 	int delete(ID id);
+
+	List<T> findByIds(List<ID> ids);
+	
+	/**
+	 * 数值为判等
+	 * 字符串为正则匹配
+	 */
+	Page<T> findByEntity(T entity,Integer page,Integer pageSize);
 	
 	int update(T newVal,String pattern,Cnd cnd);
 	/**

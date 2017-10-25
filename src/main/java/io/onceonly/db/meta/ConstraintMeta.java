@@ -1,5 +1,6 @@
 package io.onceonly.db.meta;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import io.onceonly.db.annotation.ConstraintType;
@@ -115,18 +116,18 @@ public class ConstraintMeta {
 		return String.format("ALTER TABLE %s DROP CONSTRAINT %s_%s;",table, table,cName);
 	}
 	
-	public static String addConstraintSql(List<ConstraintMeta> cms) {
-		StringBuffer sql = new StringBuffer();
+	public static List<String> addConstraintSql(List<ConstraintMeta> cms) {
+		List<String> sqls = new ArrayList<>();
 		for(ConstraintMeta cm:cms) {
-			sql.append(cm.addSql());
+			sqls.add(cm.addSql());
 		}
-		return sql.toString();
+		return sqls;
 	}
-	public static String dropConstraintSql(List<ConstraintMeta> cms) {
-		StringBuffer sql = new StringBuffer();
+	public static List<String> dropConstraintSql(List<ConstraintMeta> cms) {
+		List<String> sqls = new ArrayList<>();
 		for(ConstraintMeta cm:cms) {
-			sql.append(cm.dropSql());
+			sqls.add(cm.dropSql());
 		}
-		return sql.toString();
+		return sqls;
 	}
 }

@@ -3,25 +3,22 @@ package io.onceonly.db.dao.impl;
 import java.util.List;
 import java.util.function.Consumer;
 
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Component;
 
 import io.onceonly.db.dao.Cnd;
 import io.onceonly.db.dao.Dao;
 import io.onceonly.db.dao.Page;
 
-@Component
-public class DaoImpl<T,ID> implements Dao<T,ID> {
-	@Autowired
-	private JdbcTemplate template;
 
-	public JdbcTemplate getTemplate() {
-		return template;
+public class DaoImpl<T,ID> implements Dao<T,ID> {
+	private JdbcTemplate jdbcTemplate;
+	
+	public JdbcTemplate getJdbcTemplate() {
+		return jdbcTemplate;
 	}
 
-	public void setTemplate(JdbcTemplate template) {
-		this.template = template;
+	public void setJdbcTemplate(JdbcTemplate jdbcTemplate) {
+		this.jdbcTemplate = jdbcTemplate;
 	}
 
 	@Override
@@ -146,6 +143,18 @@ public class DaoImpl<T,ID> implements Dao<T,ID> {
 
 	@Override
 	public List<T> find(Cnd cnd) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public List<T> findByIds(List<ID> ids) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	@Override
+	public Page<T> findByEntity(T entity, Integer page, Integer pageSize) {
 		// TODO Auto-generated method stub
 		return null;
 	}
