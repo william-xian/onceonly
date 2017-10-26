@@ -11,18 +11,26 @@ import io.onceonly.db.annotation.OId;
  * @author Administrator
  *
  */
-public abstract class BaseEntity{
+public abstract class BaseEntity<ID>{
 	@OId
     @Col(nullable = false)
-	protected Long id;
+	protected ID id;
 	@JsonIgnore
     @Col(nullable = false)
 	protected boolean del = false;
 	
-	public Long getId() {
+	public BaseEntity() {
+	}
+	public void init() {
+		
+	}
+	public void initId(){
+		
+	}
+	public ID getId() {
 		return id;
 	}
-	public void setId(Long id) {
+	public void setId(ID id) {
 		this.id = id;
 	}
 	public boolean isDel() {

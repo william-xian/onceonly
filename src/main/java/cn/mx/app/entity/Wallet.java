@@ -6,7 +6,7 @@ import io.onceonly.db.tbl.BaseEntity;
 
 
 @Tbl(extend=UserChief.class,autoCreate=true)
-public class Wallet extends BaseEntity{
+public class Wallet extends BaseEntity<Long>{
     @Col(nullable = true)
 	private int balance;
     @Col(nullable = true)

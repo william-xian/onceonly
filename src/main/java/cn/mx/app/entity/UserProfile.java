@@ -5,7 +5,7 @@ import io.onceonly.db.annotation.Tbl;
 import io.onceonly.db.tbl.BaseEntity;
 
 @Tbl(extend=UserChief.class)
-public class UserProfile extends BaseEntity{
+public class UserProfile extends BaseEntity<Long>{
     @Col(nullable = false, size=20)
 	private String nickname;
     @Col(nullable = false)

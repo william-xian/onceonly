@@ -23,13 +23,13 @@ public class OOMemoryJoin {
 	public OOMemoryJoin(Class<?> mainEntity) {
 		this.mainEntity = mainEntity;
 	}
-	public <T extends BaseEntity> OOMemoryJoin  putData(Class<T> type,List<T> data) {
+	public <T extends BaseEntity<?>> OOMemoryJoin  putData(Class<T> type,List<T> data) {
 		Map<Object, Object> valueMap = values.get(type);
 		if (valueMap == null) {
 			valueMap = new HashMap<>();
 			values.put(type, valueMap);
 		}
-		for (BaseEntity be : data) {
+		for (BaseEntity<?> be : data) {
 			valueMap.put(be.getId(), be);
 		}
 		return this;
