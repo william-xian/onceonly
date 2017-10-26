@@ -8,6 +8,15 @@ public class OOAssert {
 	public static void fatal(boolean cnd,String format,Object ...args){
 		assert cnd:String.format(format, args);
 	}
+
+	public static void err(boolean cnd,String format,Object ...args){
+		assert cnd:String.format(format, args);
+	}
+	
+	public static void err(String format,Object ...args){
+		err(false,format,args);
+	}
+	
 	public static void warnning(boolean cnd,String format,Object ...args){
 		assert cnd:String.format(format, args);
 	}

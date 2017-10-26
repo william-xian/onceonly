@@ -100,6 +100,7 @@ public class OOReflectUtil {
 		}
 		return null;
 	}
+	
 	public static boolean isBaseType(Type type) {
 		if (type == String.class || type == Character.class || type == char.class) {
 			return true;
@@ -120,6 +121,19 @@ public class OOReflectUtil {
 		}else if (type == BigDecimal.class) {
 			return true;
 		}else if (type == Date.class) {
+			return true;
+		}
+		return false;
+	}
+
+	public static boolean isNumber(Object obj) {
+		if(obj instanceof Number) {
+			return true;
+		}
+		return false;
+	}
+	public static boolean isCharacter(Object obj) {
+		if ((obj instanceof String) || (obj instanceof Character)) {
 			return true;
 		}
 		return false;

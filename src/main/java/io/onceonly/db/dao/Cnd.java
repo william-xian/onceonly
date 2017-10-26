@@ -1,9 +1,8 @@
 package io.onceonly.db.dao;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-
-import org.assertj.core.util.Arrays;
 
 import cn.mx.app.entity.Wallet;
 import io.onceonly.util.OOLog;
@@ -17,11 +16,11 @@ public class Cnd<E> {
 	}
 
 	private static enum SqlOpt {
-		EQ, NE, GT, GE, LT, LE, IN, LIKE, PATTERN,
+		EQ, NE, GT, GE, LT, LE, IS_NULL,NOT_NULL,IN, LIKE, PATTERN,
 	}
 	private Integer page;
 	private Integer pageSize;
-	private List<String> order = new ArrayList<>();
+	private List<E> order = new ArrayList<>();
 	private List<Tuple2<SqlLogic,Cnd<E>>> cnds = new ArrayList<>();
 	private List<Tuple3<SqlOpt,E,Object[]>> opts = new ArrayList<>();
 	private List<SqlLogic> optsLogic = new ArrayList<>();
@@ -40,11 +39,11 @@ public class Cnd<E> {
 	public Integer getPage() {
 		return page;
 	}
-	public List<String> getOrder() {
+	public List<E> getOrder() {
 		return order;
 	}
-	public void orderBy(String order) {
-		this.order.add(order);
+	public void orderBy(List<E> tmpl) {
+		this.order.addAll(tmpl);
 	}
 	public Cnd<E> eq(E e) {
 		opts.add(new Tuple3<SqlOpt, E,Object[]>(SqlOpt.EQ,e,null));
@@ -66,19 +65,27 @@ public class Cnd<E> {
 		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.LE,e,null));
 		return this;
 	}
+	public Cnd<E> is_null(E e) {
+		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.IS_NULL,e,null));
+		return this;
+	}
+	public Cnd<E> not_null(E e) {
+		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.NOT_NULL,e,null));
+		return this;
+	}
 	/**
 	 * 对于需要查找null值字段，传递vals为null值，
 	 */
-	public Cnd<E> in(E tpl,Object[] vals) {
-		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.IN,tpl,vals));
+	public Cnd<E> in(E tmpl,Object[] vals) {
+		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.IN,tmpl,vals));
 		return this;
 	}
-	public Cnd<E> like(E tpl) {
-		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.LIKE,tpl,null));
+	public Cnd<E> like(E tmpl) {
+		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.LIKE,tmpl,null));
 		return this;
 	}
-	public Cnd<E> pattern(E tpl) {
-		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.PATTERN,tpl,null));
+	public Cnd<E> pattern(E tmpl) {
+		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.PATTERN,tmpl,null));
 		return this;
 	}
 	
@@ -107,38 +114,42 @@ public class Cnd<E> {
 		return this;
 	}
 	
-	public String sql(Cnd<E> cnd,List<Object> sqlArgs,TemplateAdapter adapter){
+	public static <E> String sql(Cnd<E> cnd,List<Object> sqlArgs,TemplateAdapter adapter){
 		StringBuffer self = new StringBuffer("(");
-		for(Tuple3<SqlOpt,E,Object[]> opt:opts) {
+		for(Tuple3<SqlOpt,E,Object[]> opt:cnd.opts) {
 			Tuple2<String[],Object[]> tpl = adapter.adapter(opt.b);
 			if(tpl.a.length ==0) continue;
 			switch(opt.a) {
 			case EQ:
 				self.append(String.format("(%s=?) AND ", String.join("=? AND ", tpl.a)));
-				sqlArgs.addAll(Arrays.nonNullElementsIn(tpl.b));
+				sqlArgs.addAll(Arrays.asList(tpl.b));
 			case NE:
 				self.append(String.format("(%s!=?) AND ", String.join("!=? AND ", tpl.a)));
-				sqlArgs.addAll(Arrays.nonNullElementsIn(tpl.b));
+				sqlArgs.addAll(Arrays.asList(tpl.b));
 			case LT:
 				self.append(String.format("(%s<?) AND ", String.join("=? AND ", tpl.a)));
-				sqlArgs.addAll(Arrays.nonNullElementsIn(tpl.b));
+				sqlArgs.addAll(Arrays.asList(tpl.b));
 			case LE:
 				self.append(String.format("(%s<=?) AND ", String.join("=? AND ", tpl.a)));
-				sqlArgs.addAll(Arrays.nonNullElementsIn(tpl.b));
+				sqlArgs.addAll(Arrays.asList(tpl.b));
 				break;
 			case GT:
 				self.append(String.format("(%s>?) AND ", String.join("=? AND ", tpl.a)));
-				sqlArgs.addAll(Arrays.nonNullElementsIn(tpl.b));
+				sqlArgs.addAll(Arrays.asList(tpl.b));
 				break;
 			case GE:
 				self.append(String.format("(%s>=?) AND ", String.join("=? AND ", tpl.a)));
-				sqlArgs.addAll(Arrays.nonNullElementsIn(tpl.b));
+				sqlArgs.addAll(Arrays.asList(tpl.b));
+				break;
+			case IS_NULL:
+				self.append(String.format("(%s IS NULL) AND ", String.join(" IS NULL AND ", tpl.a)));
+				break;
+			case NOT_NULL:
+				self.append(String.format("(%s NOT NULL) AND ", String.join(" NOT NULL AND ", tpl.a)));
 				break;
 			case IN:
-				if(opt.c == null) {
-					self.append(String.format("(%s IS NULL) AND ", String.join(" IS NULL AND ", tpl.a)));
-				}else {
-					List<Object> inArgs = Arrays.nonNullElementsIn(opt.c);
+				if(opt.c != null) {
+					List<Object> inArgs = Arrays.asList(opt.c);
 					if(!inArgs.isEmpty()){
 						String stub = OOUtils.genStub("?", ",", inArgs.size());
 						for(String f:tpl.a) {
@@ -148,15 +159,17 @@ public class Cnd<E> {
 					}else {
 						OOLog.warnning("条件查询  in 全部为null值");
 					}
+				} else {
+					OOLog.warnning("条件查询  in 全部为null值");
 				}
 				break;
 			case LIKE:
 				self.append(String.format("(%s LIKE ?) AND ", String.join(" LIKE ? AND ", tpl.a)));
-				sqlArgs.addAll(Arrays.nonNullElementsIn(tpl.b));
+				sqlArgs.addAll(Arrays.asList(tpl.b));
 				break;
 			case PATTERN:
 				self.append(String.format("(%s ~* ?) AND ", String.join(" ~* ? AND ", tpl.a)));
-				sqlArgs.addAll(Arrays.nonNullElementsIn(tpl.b));
+				sqlArgs.addAll(Arrays.asList(tpl.b));
 				break;
 			default:
 				break;
@@ -197,15 +210,12 @@ public class Cnd<E> {
 	}
 	
 	public static void main(String[] args) {
+		Wallet order = new Wallet();
+		order.setExpenditure(DefTmpl.ASC_INT);
 		Wallet e = new Wallet();
-		e.setId(1L);
+		e.setId(DefTmpl.SHOW_LONG);
 		Cnd<Wallet> cnd = new Cnd<>();
-		cnd.eq(e).and().in(e,Arrays.array(1L,2L)).orderBy("");
+		cnd.eq(e).and().in(e,new Long[] {1L,2L}).orderBy(Arrays.asList(order));
 	}
 }
-/**
- * 返回需要匹配的字段
- */
-interface TemplateAdapter {
-	<E> Tuple2<String[],Object[]> adapter(E e); 
-}
+
