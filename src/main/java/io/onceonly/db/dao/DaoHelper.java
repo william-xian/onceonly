@@ -20,15 +20,17 @@ import io.onceonly.db.meta.ColumnMeta;
 import io.onceonly.db.meta.DDMeta;
 import io.onceonly.db.meta.TableMeta;
 import io.onceonly.util.OOAssert;
+import io.onceonly.util.OOLog;
+import io.onceonly.util.OOUtils;
 import io.onceonly.util.Tuple2;
 
 public class DaoHelper {
 	private JdbcTemplate jdbcTemplate;
 
-	private Map<String,TableMeta> nameToTableMata;
+	private Map<String,TableMeta> tableToTableMata;
 	@SuppressWarnings("rawtypes")
-	private Map<String,RowMapper> nameToRowMapper = new HashMap<>();
-	private Map<String,DDMeta> nameToDDMata;
+	private Map<String,RowMapper> tableToRowMapper = new HashMap<>();
+	private Map<String,DDMeta> tableToDDMata;
 	
 	public JdbcTemplate getJdbcTemplate() {
 		return jdbcTemplate;
@@ -38,40 +40,40 @@ public class DaoHelper {
 		this.jdbcTemplate = jdbcTemplate;
 	}
 	
-	public Map<String, TableMeta> getNameToTableMata() {
-		return nameToTableMata;
+	public Map<String, TableMeta> getTableToTableMata() {
+		return tableToTableMata;
 	}
 
-	public void setNameToTableMata(Map<String, TableMeta> nameToTableMata) {
-		this.nameToTableMata = nameToTableMata;
-	}
-
-	@SuppressWarnings("rawtypes")
-	public Map<String, RowMapper> getNameToRowMapper() {
-		return nameToRowMapper;
+	public void setTableToTableMata(Map<String, TableMeta> tableToTableMata) {
+		this.tableToTableMata = tableToTableMata;
 	}
 
 	@SuppressWarnings("rawtypes")
-	public void setNameToRowMapper(Map<String, RowMapper> nameToRowMapper) {
-		this.nameToRowMapper = nameToRowMapper;
+	public Map<String, RowMapper> getTableToRowMapper() {
+		return tableToRowMapper;
 	}
 
-	public Map<String, DDMeta> getNameToDDMata() {
-		return nameToDDMata;
+	@SuppressWarnings("rawtypes")
+	public void setTableToRowMapper(Map<String, RowMapper> tableToRowMapper) {
+		this.tableToRowMapper = tableToRowMapper;
 	}
 
-	public void setNameToDDMata(Map<String, DDMeta> nameToDDMata) {
-		this.nameToDDMata = nameToDDMata;
+	public Map<String, DDMeta> getTableToDDMata() {
+		return tableToDDMata;
 	}
-	
+
+	public void setTableToDDMata(Map<String, DDMeta> tableToDDMata) {
+		this.tableToDDMata = tableToDDMata;
+	}
+
 	public <E> boolean createOrUpdate(Class<E> tbl) {
-		TableMeta old = nameToTableMata.get(tbl.getSimpleName());
+		TableMeta old = tableToTableMata.get(tbl.getSimpleName());
 		if(old == null) {
 			old = TableMeta.createBy(tbl);
 			List<String> sqls = old.createTableSql();
 			jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));
 			old.freshNameToField();
-			nameToTableMata.put(tbl.getSimpleName(), old);
+			tableToTableMata.put(tbl.getSimpleName(), old);
 			return true;
 		}else {
 			TableMeta tm = TableMeta.createBy(tbl);
@@ -79,9 +81,12 @@ public class DaoHelper {
 				return false;
 			} else if(tm != null){
 				List<String> sqls = old.upgradeTo(tm);
-				jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));
+				System.out.println(OOUtils.toJSON(sqls));
+				if(!sqls.isEmpty()){
+					jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));	
+				}
 				tm.freshNameToField();
-				nameToTableMata.put(tbl.getSimpleName(), tm);
+				tableToTableMata.put(tbl.getSimpleName(), tm);
 				return true;
 			}
 		}
@@ -89,11 +94,11 @@ public class DaoHelper {
 	}
 
 	public <E> boolean drop(Class<E> tbl) {
-		TableMeta tm = nameToTableMata.get(tbl.getSimpleName());
+		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
 		if(tm == null) {
 			return false;
 		}
-		String sql = String.format("DROP TABLE IF EXIST %s;", tbl.getSimpleName());
+		String sql = String.format("DROP TABLE IF EXISTS %s;", tbl.getSimpleName());
 		jdbcTemplate.batchUpdate(sql);
 		return true;
 	}
@@ -133,16 +138,16 @@ public class DaoHelper {
 	
 	@SuppressWarnings("unchecked")
 	public <E,ID> E get(Class<E> tbl,ID id) {
-		TableMeta tm = nameToTableMata.get(tbl.getSimpleName());
+		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
 		if(tm == null) {
 			return null;
 		}
 		RowMapper<E> rowMapper = null;
-		if(!nameToRowMapper.containsKey(tbl.getSimpleName())) {
+		if(!tableToRowMapper.containsKey(tbl.getSimpleName())) {
 			rowMapper = genRowMapper(tbl,tm);
-			nameToRowMapper.put(tbl.getSimpleName(), rowMapper);
+			tableToRowMapper.put(tbl.getSimpleName(), rowMapper);
 		}else {
-			rowMapper = nameToRowMapper.get(tbl.getSimpleName());	
+			rowMapper = tableToRowMapper.get(tbl.getSimpleName());	
 		}
 		String sql = String.format("SELECT * FROM %s WHERE %s = (?)", tm.getTable(),tm.getPrimaryKey());
 		List<E> values = jdbcTemplate.query(sql, new Object[]{id}, rowMapper);
@@ -177,26 +182,15 @@ public class DaoHelper {
 		}
 		return new Tuple2<List<String>,List<List<Object>>>(names,valsList);
 	}
-	public static String genStub(String e,String s,int cnt) {
-		StringBuffer sb = new StringBuffer((e.length() + s.length()) * cnt);
-		for(int i=0; i < cnt-1; i++) {
-			sb.append(e);
-			sb.append(s);
-		}
-		if(cnt > 0) {
-			sb.append(e);
-		}
-		return sb.toString();
-	}
 	
 	public <E> E insert(E entity) {
 		OOAssert.warnning(entity != null,"不可以插入null");
 		Class<?> tbl = entity.getClass();
-		TableMeta tm = nameToTableMata.get(tbl.getSimpleName());	
+		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
 		Tuple2<List<String>,List<List<Object>>>  nameVals = fetchNamesValues(tm.getColumnMetas(),false,Arrays.asList(entity));
 		List<Object> vals = nameVals.b.get(0);
-		String stub = genStub("?",",",nameVals.a.size());
+		String stub = OOUtils.genStub("?",",",nameVals.a.size());
 		String sql = String.format("INSERT INTO %s(%s) VALUES(%s);", tm.getTable(),String.join(",", nameVals.a),stub);
 		jdbcTemplate.update(sql, vals.toArray());
 		return entity;
@@ -205,12 +199,11 @@ public class DaoHelper {
 	public <E> int insert(List<E> entities) {
 		OOAssert.warnning(entities != null && !entities.isEmpty(),"不可以插入null");
 		Class<?> tbl = entities.get(0).getClass();
-		TableMeta tm = nameToTableMata.get(tbl.getSimpleName());
+		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
 		Tuple2<List<String>,List<List<Object>>>  nameVals = fetchNamesValues(tm.getColumnMetas(),false,entities);
-		String stub = genStub("?",",",nameVals.a.size());
+		String stub = OOUtils.genStub("?",",",nameVals.a.size());
 		String sql = String.format("INSERT INTO %s(%s) VALUES(%s);", tm.getTable(),String.join(",", nameVals.a),stub);
-		
 		int[] cnts = jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
 			@Override
 			public void setValues(PreparedStatement ps, int i) throws SQLException {
@@ -218,6 +211,7 @@ public class DaoHelper {
 				for(int vi = 0;  vi < vals.size(); vi++) {
 					ps.setObject(vi+1, vals.get(vi));
 				}
+				OOLog.debug("%s values:%s",sql, OOUtils.toJSON(vals));
 			}
 			@Override
 			public int getBatchSize() {
@@ -315,17 +309,17 @@ public class DaoHelper {
 		if(ids.isEmpty()) {
 			return new ArrayList<E>();
 		}
-		TableMeta tm = nameToTableMata.get(tbl.getSimpleName());
+		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
 		if(tm == null) {
 		}
 		RowMapper<E> rowMapper = null;
-		if(!nameToRowMapper.containsKey(tbl.getSimpleName())) {
+		if(!tableToRowMapper.containsKey(tbl.getSimpleName())) {
 			rowMapper = genRowMapper(tbl,tm);
-			nameToRowMapper.put(tbl.getSimpleName(), rowMapper);
+			tableToRowMapper.put(tbl.getSimpleName(), rowMapper);
 		}else {
-			rowMapper = nameToRowMapper.get(tbl.getSimpleName());	
+			rowMapper = tableToRowMapper.get(tbl.getSimpleName());	
 		}
-		String stub = genStub("?",",",ids.size());
+		String stub = OOUtils.genStub("?",",",ids.size());
 		String sql = String.format("SELECT * FROM %s WHERE %s in (%s)", tm.getTable(),tm.getPrimaryKey(),stub);
 		List<E> values = jdbcTemplate.query(sql, ids.toArray(), rowMapper);
 		return values;

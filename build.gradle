@@ -33,4 +33,5 @@ dependencies {
     compile('com.google.code.gson:gson:2.8.1')
     testCompile("org.springframework.boot:spring-boot-starter-test")
     testCompile('postgresql:postgresql:9.4.1208-jdbc42-atlassian-hosted')
+    testCompile("com.alibaba:druid:1.1.3'")
 }

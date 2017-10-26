@@ -130,4 +130,54 @@ public class ConstraintMeta {
 		}
 		return sqls;
 	}
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((columns == null) ? 0 : columns.hashCode());
+		result = prime * result + ((name == null) ? 0 : name.hashCode());
+		result = prime * result + ((refTable == null) ? 0 : refTable.hashCode());
+		result = prime * result + ((table == null) ? 0 : table.hashCode());
+		result = prime * result + ((type == null) ? 0 : type.hashCode());
+		result = prime * result + ((using == null) ? 0 : using.hashCode());
+		return result;
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		ConstraintMeta other = (ConstraintMeta) obj;
+		if (columns == null) {
+			if (other.columns != null)
+				return false;
+		} else if (!columns.equals(other.columns))
+			return false;
+		if (name == null) {
+			if (other.name != null)
+				return false;
+		} else if (!name.equals(other.name))
+			return false;
+		if (refTable == null) {
+			if (other.refTable != null)
+				return false;
+		} else if (!refTable.equals(other.refTable))
+			return false;
+		if (table == null) {
+			if (other.table != null)
+				return false;
+		} else if (!table.equals(other.table))
+			return false;
+		if (type != other.type)
+			return false;
+		if (using == null) {
+			if (other.using != null)
+				return false;
+		} else if (!using.equals(other.using))
+			return false;
+		return true;
+	}	
 }

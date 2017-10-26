@@ -1,6 +1,7 @@
 package io.onceonly.db.meta;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -17,6 +18,7 @@ import io.onceonly.db.annotation.OId;
 import io.onceonly.db.annotation.Tbl;
 import io.onceonly.util.OOAssert;
 import io.onceonly.util.OOLog;
+import io.onceonly.util.OOReflectUtil;
 import io.onceonly.util.OOUtils;
 
 public class TableMeta {
@@ -256,10 +258,10 @@ public class TableMeta {
 				dropUniqueConstraint.add(tuple);
 			}
 		}
-		if(primaryKey != null && primaryKey.equals(other.primaryKey)) {
+		if(primaryKey != null && !primaryKey.equals(other.primaryKey)) {
 			sqls.add(primaryKey.dropSql());
 		}
-		if(other.primaryKey != null && other.primaryKey.equals(primaryKey)) {
+		if(other.primaryKey != null && !other.primaryKey.equals(primaryKey)) {
 			sqls.add(other.primaryKey.addSql());
 		}
 		sqls.addAll(addColumnSql(newColumns));
@@ -321,12 +323,8 @@ public class TableMeta {
 				cm.setNullable(col.nullable());
 				cm.setPattern(col.pattern());
 				if (col.colDef().equals("")) {
-					String type = transType(field, col);
-					if (type != null) {
-						cm.setType(type);
-					} else {
-						continue;
-					}
+					String type = transType(clazz,entity,field, col);
+					cm.setType(type);
 				} else {
 					cm.setType(col.colDef());
 				}
@@ -345,25 +343,96 @@ public class TableMeta {
 		return tm;
 	}
 	/** 以postgresql為准 */
-	private static String transType(Field field,Col col) {
-		if(field.getType().equals(Long.class) || field.getType().equals(long.class)) {
+	private static String transType(Class<?> forefather,Class<?> clazz,Field field,Col col) {
+		Type type = field.getGenericType();
+		if(field.getType() == Object.class) {
+			Type clazzType = OOReflectUtil.searchGenType(forefather, clazz, type);
+			if(clazzType != null){
+				type = clazzType;
+			}else {
+				OOAssert.fatal("不支持的数据类型:%s", type);
+			}
+		}
+		if(type.equals(Long.class) || type.equals(long.class)) {
 			return "bigint";
-		}else if(field.getType().equals(String.class)) {
+		}else if(type.equals(String.class)) {
 			return String.format("varchar(%d)", col.size());	
-		}else if(field.getType().equals(Integer.class) || field.getType().equals(int.class)) {
+		}else if(type.equals(Integer.class) || type.equals(int.class)) {
 			return "integer";	
-		}else if(field.getType().equals(BigDecimal.class)) {
+		}else if(type.equals(BigDecimal.class)) {
 			return String.format("decimal(%d,%d)", col.precision(), col.scale());
-		}else if(field.getType().equals(Boolean.class) || field.getType().equals(boolean.class)) {
+		}else if(type.equals(Boolean.class) || type.equals(boolean.class)) {
 			return "boolean";	
-		}else if(field.getType().equals(Short.class) || field.getType().equals(short.class)) {
+		}else if(type.equals(Short.class) || type.equals(short.class)) {
 			return "smallint";	
-		}else if(field.getType().equals(Float.class) || field.getType().equals(float.class)) {
+		}else if(type.equals(Float.class) || type.equals(float.class)) {
 			return "float";
-		}else if(field.getType().equals(Double.class) || field.getType().equals(double.class)) {
+		}else if(type.equals(Double.class) || type.equals(double.class)) {
 			return "double precision";
+		}else {
+			OOAssert.fatal("不支持的数据类型:%s", type);
 		}
 		return null;
 	}
+	@Override
+	public int hashCode() {
+		final int prime = 31;
+		int result = 1;
+		result = prime * result + ((columnMetas == null) ? 0 : columnMetas.hashCode());
+		result = prime * result + ((constraints == null) ? 0 : constraints.hashCode());
+		result = prime * result + ((entity == null) ? 0 : entity.hashCode());
+		result = prime * result + ((extend == null) ? 0 : extend.hashCode());
+		result = prime * result + ((fieldConstraint == null) ? 0 : fieldConstraint.hashCode());
+		result = prime * result + ((primaryKey == null) ? 0 : primaryKey.hashCode());
+		result = prime * result + ((table == null) ? 0 : table.hashCode());
+		return result;
+	}
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj)
+			return true;
+		if (obj == null)
+			return false;
+		if (getClass() != obj.getClass())
+			return false;
+		TableMeta other = (TableMeta) obj;
+		if (columnMetas == null) {
+			if (other.columnMetas != null)
+				return false;
+		} else if (!columnMetas.equals(other.columnMetas))
+			return false;
+		if (constraints == null) {
+			if (other.constraints != null)
+				return false;
+		} else if (!constraints.equals(other.constraints))
+			return false;
+		if (entity == null) {
+			if (other.entity != null)
+				return false;
+		} else if (!entity.equals(other.entity))
+			return false;
+		if (extend == null) {
+			if (other.extend != null)
+				return false;
+		} else if (!extend.equals(other.extend))
+			return false;
+		if (fieldConstraint == null) {
+			if (other.fieldConstraint != null)
+				return false;
+		} else if (!fieldConstraint.equals(other.fieldConstraint))
+			return false;
+		if (primaryKey == null) {
+			if (other.primaryKey != null)
+				return false;
+		} else if (!primaryKey.equals(other.primaryKey))
+			return false;
+		if (table == null) {
+			if (other.table != null)
+				return false;
+		} else if (!table.equals(other.table))
+			return false;
+		return true;
+	}
+	
 }
 

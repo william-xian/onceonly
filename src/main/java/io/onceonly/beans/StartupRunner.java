@@ -13,12 +13,13 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.core.annotation.Order;
 
-import io.onceonly.annotation.I18nCfgBrief;
 import io.onceonly.annotation.I18nCfg;
+import io.onceonly.annotation.I18nCfgBrief;
 import io.onceonly.annotation.I18nMsg;
 import io.onceonly.db.tbl.OOI18n;
 import io.onceonly.exception.Failed;
 import io.onceonly.util.AnnotationScanner;
+import io.onceonly.util.OOReflectUtil;
 import io.onceonly.util.OOUtils;
 
 // TODO @Component
@@ -94,7 +95,7 @@ public class StartupRunner implements CommandLineRunner {
 						/** The val depend on database */
 						if(!val.equals(i18n.getVal())){
 							i18n.setVal(val);
-							field.set(null, OOUtils.strToBaseType(field.getType(), val));
+							field.set(null, OOReflectUtil.strToBaseType(field.getType(), val));
 				        	logger.debug("reload: " + i18n);
 						}
 						if(!i18n.getName().equals(name) ){
