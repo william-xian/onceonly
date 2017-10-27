@@ -8,9 +8,13 @@ import org.apache.tomcat.jdbc.pool.DataSource;
 import org.junit.BeforeClass;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import io.onceonly.db.dao.DaoHelper;
+
 public class DaoBaseTest {
 	protected static final JdbcTemplate jdbcTemplate = new JdbcTemplate();
 
+	protected static final DaoHelper daoHelper = new DaoHelper();
+	
 	@BeforeClass
 	public static void init() throws IOException {
 		Properties prop = new Properties();
@@ -28,6 +32,10 @@ public class DaoBaseTest {
 		ds.setMaxActive(Integer.parseInt(maxActive));
 		jdbcTemplate.setDataSource(ds);
 		System.out.println("loaded jdbcTemplate");
+		
+		DDHoster.upgrade();
+		daoHelper.setTableToTableMata(DDHoster.tableToTableMeta);
+		daoHelper.setJdbcTemplate(jdbcTemplate);
 	}
 	
 }

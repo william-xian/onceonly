@@ -89,7 +89,10 @@ public class DaoHelper {
 		if(old == null) {
 			old = TableMeta.createBy(tbl);
 			List<String> sqls = old.createTableSql();
-			jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));
+			if(!sqls.isEmpty()) {
+				System.out.println(String.join(",", sqls.toArray(new String[0])));
+				jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));	
+			}
 			old.freshNameToField();
 			tableToTableMeta.put(tbl.getSimpleName(), old);
 			return true;
@@ -405,7 +408,7 @@ public class DaoHelper {
 
 	public <E extends OOEntity<?>> long count(Class<E> tbl) {
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
-		String sql = String.format("SELECT COUNT(1) FROM %s WHERE (%s);", tm.getTable());
+		String sql = String.format("SELECT COUNT(1) FROM %s;", tm.getTable());
 		return jdbcTemplate.queryForObject(sql, Long.class);
 	}
 
@@ -414,11 +417,12 @@ public class DaoHelper {
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		List<Object> sqlArgs = new ArrayList<>();
 		String whereCnd = Cnd.sql(cnd, sqlArgs, adapter);
+		
+		String sql = String.format("SELECT COUNT(1) FROM %s WHERE %s;", tm.getTable(), whereCnd);
 		if (whereCnd.equals("")) {
-			return 0;
+			sql = String.format("SELECT COUNT(1) FROM %s;", tm.getTable());
 		}
-		String sql = String.format("SELECT COUNT(1) FROM %s WHERE (%s);", tm.getTable(), whereCnd);
-		return jdbcTemplate.queryForObject(sql, Long.class);
+		return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
 	}
 
 	public <E extends OOEntity<?>> Page<E> find(Class<E> tbl,Cnd<E> cnd) {

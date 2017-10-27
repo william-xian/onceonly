@@ -116,36 +116,57 @@ public class Cnd<E> {
 	
 	public static <E> String sql(Cnd<E> cnd,List<Object> sqlArgs,TemplateAdapter adapter){
 		StringBuffer self = new StringBuffer("(");
-		for(Tuple3<SqlOpt,E,Object[]> opt:cnd.opts) {
+		for(int i = 0; i < cnd.opts.size(); i++ ) {
+			Tuple3<SqlOpt,E,Object[]> opt = cnd.opts.get(i);
+			String nextLogic = "";
+			if(i < cnd.optsLogic.size()) {
+				SqlLogic nl = cnd.optsLogic.get(i);
+				switch(nl) {
+				case AND:
+					nextLogic = " AND";
+					break;
+				case OR:
+					nextLogic = " OR";
+					break;
+				case NOT:
+					nextLogic = " AND NOT";
+					break;
+					default:
+						nextLogic = "";
+				}
+			}
 			Tuple2<String[],Object[]> tpl = adapter.adapterForWhere(opt.b);
 			if(tpl == null || tpl.a.length ==0) continue;
 			switch(opt.a) {
 			case EQ:
-				self.append(String.format("(%s=?) AND ", String.join("=? AND ", tpl.a)));
+				self.append(String.format("(%s=?) %s ", String.join("=? AND", tpl.a),nextLogic));
 				sqlArgs.addAll(Arrays.asList(tpl.b));
+				break;
 			case NE:
-				self.append(String.format("(%s!=?) AND ", String.join("!=? AND ", tpl.a)));
+				self.append(String.format("(%s!=?) %s ", String.join("!=? AND", tpl.a),nextLogic));
 				sqlArgs.addAll(Arrays.asList(tpl.b));
+				break;
 			case LT:
-				self.append(String.format("(%s<?) AND ", String.join("=? AND ", tpl.a)));
+				self.append(String.format("(%s<?) %s", String.join("=? AND", tpl.a),nextLogic));
 				sqlArgs.addAll(Arrays.asList(tpl.b));
+				break;
 			case LE:
-				self.append(String.format("(%s<=?) AND ", String.join("=? AND ", tpl.a)));
+				self.append(String.format("(%s<=?) %s", String.join("=? AND", tpl.a),nextLogic));
 				sqlArgs.addAll(Arrays.asList(tpl.b));
 				break;
 			case GT:
-				self.append(String.format("(%s>?) AND ", String.join("=? AND ", tpl.a)));
+				self.append(String.format("(%s>?) %s", String.join("=? AND", tpl.a),nextLogic));
 				sqlArgs.addAll(Arrays.asList(tpl.b));
 				break;
 			case GE:
-				self.append(String.format("(%s>=?) AND ", String.join("=? AND ", tpl.a)));
+				self.append(String.format("(%s>=?) %s", String.join("=? AND", tpl.a),nextLogic));
 				sqlArgs.addAll(Arrays.asList(tpl.b));
 				break;
 			case IS_NULL:
-				self.append(String.format("(%s IS NULL) AND ", String.join(" IS NULL AND ", tpl.a)));
+				self.append(String.format("(%s IS NULL) %s", String.join(" IS NULL AND", tpl.a),nextLogic));
 				break;
 			case NOT_NULL:
-				self.append(String.format("(%s NOT NULL) AND ", String.join(" NOT NULL AND ", tpl.a)));
+				self.append(String.format("(%s NOT NULL) %s", String.join(" NOT NULL AND", tpl.a),nextLogic));
 				break;
 			case IN:
 				if(opt.c != null) {
@@ -153,7 +174,7 @@ public class Cnd<E> {
 					if(!inArgs.isEmpty()){
 						String stub = OOUtils.genStub("?", ",", inArgs.size());
 						for(String f:tpl.a) {
-							self.append(String.format("%s IN (%s) AND ",f, stub));
+							self.append(String.format(" %s IN (%s) %s",f, stub,nextLogic));
 							sqlArgs.addAll(inArgs);
 						}	
 					}else {
@@ -164,39 +185,40 @@ public class Cnd<E> {
 				}
 				break;
 			case LIKE:
-				self.append(String.format("(%s LIKE ?) AND ", String.join(" LIKE ? AND ", tpl.a)));
+				self.append(String.format("(%s LIKE ?) %s", String.join(" LIKE ? AND", tpl.a),nextLogic));
 				sqlArgs.addAll(Arrays.asList(tpl.b));
 				break;
 			case PATTERN:
-				self.append(String.format("(%s ~* ?) AND ", String.join(" ~* ? AND ", tpl.a)));
+				self.append(String.format("(%s ~* ?) %s", String.join(" ~* ? AND", tpl.a),nextLogic));
 				sqlArgs.addAll(Arrays.asList(tpl.b));
 				break;
 			default:
-				break;
 			}
 		}
 		if(self.length() > 1) {
-			int tailLen = " AND ".length();
-			self.delete(self.length()-tailLen, self.length());
+			self.delete(self.length()-1, self.length());
 			self.append(')');
 		}else {
 			self.delete(0, 1);
 		}
-		
 		for(Tuple2<SqlLogic, Cnd<E>> c:cnd.cnds){
 			String other = sql(c.b,sqlArgs,adapter);
 			if(!other.equals("")){
 				switch(c.a) {
 				case AND:
-					self.append(" AND ");
+					if(self.length() > 0) self.append(" AND");
 					self.append(other);
 					break;
 				case OR:
-					self.append(" OR ");
+					if(self.length() > 0) self.append(" OR");
 					self.append(other);
 					break;
 				case NOT:
-					self.append(" NOT ");
+					if(self.length() > 0) {
+						self.append(" AND NOT");
+					} else {
+						self.append(" NOT");
+					}
 					self.append(other);
 					break;
 					default:

@@ -19,7 +19,7 @@ public abstract class OOEntity<ID>{
 	protected ID id;
 	@JsonIgnore
     @Col(nullable = false)
-	protected boolean rm = false;
+	protected Boolean rm;
 	/** 用户存储额外数据，如 聚合函数 */
 	protected Map<String,Object> extra;
 	
