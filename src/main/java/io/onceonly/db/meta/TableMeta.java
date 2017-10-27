@@ -58,11 +58,11 @@ public class TableMeta {
 	public void setPrimaryKey(ConstraintMeta primaryKey) {
 		this.primaryKey = primaryKey;
 	}
-	public void setPrimaryKey(List<String> primaryKeys) {
+	public void setPrimaryKey(String primaryKey) {
 		ConstraintMeta pk = new ConstraintMeta();
 		pk.setTable(this.table);
-		pk.setName(String.format("pk_%s_%s", pk.table,String.join("_", primaryKeys)));
-		pk.setColumns(primaryKeys);
+		pk.setName(String.format("pk_%s_%s", pk.table,primaryKey));
+		pk.setColumns(Arrays.asList(primaryKey));
 		pk.setType(ConstraintType.PRIMARY_KEY);
 		pk.setUsing("BTREE");
 		this.primaryKey = pk;
@@ -339,7 +339,10 @@ public class TableMeta {
 			}
 		}
 		tm.setColumnMetas(columnMetas);
-		tm.setPrimaryKey(primaryKeys);
+		if(primaryKeys.size() > 1) {
+			OOAssert.fatal("不支持符合主键 %s(%s)", tm.table,String.join(",", primaryKeys));
+		}
+		tm.setPrimaryKey(primaryKeys.get(0));
 		return tm;
 	}
 	/** 以postgresql為准 */
