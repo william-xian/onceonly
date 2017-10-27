@@ -117,8 +117,8 @@ public class Cnd<E> {
 	public static <E> String sql(Cnd<E> cnd,List<Object> sqlArgs,TemplateAdapter adapter){
 		StringBuffer self = new StringBuffer("(");
 		for(Tuple3<SqlOpt,E,Object[]> opt:cnd.opts) {
-			Tuple2<String[],Object[]> tpl = adapter.adapter(opt.b);
-			if(tpl.a.length ==0) continue;
+			Tuple2<String[],Object[]> tpl = adapter.adapterForWhere(opt.b);
+			if(tpl == null || tpl.a.length ==0) continue;
 			switch(opt.a) {
 			case EQ:
 				self.append(String.format("(%s=?) AND ", String.join("=? AND ", tpl.a)));
@@ -216,6 +216,16 @@ public class Cnd<E> {
 		e.setId(DefTmpl.SHOW_LONG);
 		Cnd<Wallet> cnd = new Cnd<>();
 		cnd.eq(e).and().in(e,new Long[] {1L,2L}).orderBy(Arrays.asList(order));
+	}
+	
+	public String having() {
+		// TODO Auto-generated method stub
+		return null;
+	}
+	
+	public String orderBy() {
+		// TODO Auto-generated method stub
+		return null;
 	}
 }
 

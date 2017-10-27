@@ -8,7 +8,7 @@ import java.util.List;
 public class Page<T> {
 	Integer page;
 	Integer pageSize;
-	Integer total;
+	Long total;
 	List<T> data;
 	public Integer getPage() {
 		return page;
@@ -22,10 +22,10 @@ public class Page<T> {
 	public void setPageSize(Integer pageSize) {
 		this.pageSize = pageSize;
 	}
-	public Integer getTotal() {
+	public Long getTotal() {
 		return total;
 	}
-	public void setTotal(Integer total) {
+	public void setTotal(Long total) {
 		this.total = total;
 	}
 	public List<T> getData() {

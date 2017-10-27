@@ -14,6 +14,7 @@ import java.util.function.Consumer;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.RowMapper;
 
 import io.onceonly.db.meta.ColumnMeta;
@@ -114,29 +115,34 @@ public class DaoHelper implements TemplateAdapter{
 		return jdbcTemplate.batchUpdate(sql, batchArgs);
 	}
 	
-	private <E extends BaseEntity<?>> RowMapper<E> genRowMapper(Class<E> tbl,TableMeta tm) {
+	private static <E extends BaseEntity<?>> RowMapper<E> genRowMapper(Class<E> tbl,TableMeta tm) {
 		RowMapper<E> rowMapper = new RowMapper<E>(){
 			@Override
 			public E mapRow(ResultSet rs, int rowNum) throws SQLException {
-				E row = null;
-				if(rs.next()) {
-					try {
-						row = tbl.newInstance();
-						List<ColumnMeta> columnMetas = tm.getColumnMetas();
-						for(ColumnMeta colMeta:columnMetas) {
-							Field field = colMeta.getField();
-							Object val = rs.getObject(colMeta.getName(), field.getType());
-							field.set(row, val);
-						}
-						
-					} catch (InstantiationException | IllegalAccessException e) {
-						OOAssert.warnning("%s InstantiationException", tbl);
-					} 
-				}
+				E row = createBy(tbl,tm,rs);
 				return row;
 			}
 		};
 		return rowMapper;
+	}
+	
+	public static <E extends BaseEntity<?>> E createBy(Class<E> tbl,TableMeta tm,ResultSet rs) throws SQLException {
+		E row = null;
+		if(rs.next()) {
+			try {
+				row = tbl.newInstance();
+				List<ColumnMeta> columnMetas = tm.getColumnMetas();
+				for(ColumnMeta colMeta:columnMetas) {
+					Field field = colMeta.getField();
+					Object val = rs.getObject(colMeta.getName(), field.getType());
+					field.set(row, val);
+				}
+				
+			} catch (InstantiationException | IllegalAccessException e) {
+				OOAssert.warnning("%s InstantiationException", tbl);
+			} 
+		}
+		return row;
 	}
 	
 	@SuppressWarnings("unchecked")
@@ -332,6 +338,7 @@ public class DaoHelper implements TemplateAdapter{
 	}
 
 	public <E,ID> int remove(Class<E> tbl,ID id) {
+		if(id == null) return 0;
 		OOAssert.warnning(id != null,"ID不能为null");
 		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
 		String sql = String.format("UPDATE %s SET del=false WHERE id=?;", tm.getTable());
@@ -339,53 +346,149 @@ public class DaoHelper implements TemplateAdapter{
 	}
 
 	public <E,ID> int remove(Class<E> tbl, List<ID> ids) {
-		OOAssert.warnning(ids != null && !ids.isEmpty(),"ID不能为null");
+		if(ids == null || ids.isEmpty()) return 0;
 		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
-		String sql = String.format("UPDATE %s SET del=false WHERE id=?;", tm.getTable());
+		String stub = OOUtils.genStub("?",",",ids.size());
+		String sql = String.format("UPDATE %s SET del=false WHERE id in (%s);", tm.getTable(),stub);
 		return jdbcTemplate.update(sql, ids);
 	}
-	
-	public <E extends BaseEntity<?>> int updateXOR(E arg, Cnd<E> cnd) {
-		// TODO Auto-generated method stub
-		return 0;
+	public <E extends BaseEntity<?>> int remove(Class<E> tbl, Cnd<E> cnd) {
+		if(cnd == null) return 0;
+		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		List<Object> sqlArgs = new ArrayList<>();
+		String whereCnd = Cnd.sql(cnd, sqlArgs, this);
+		if(whereCnd.equals("")) {
+			return 0;
+		}
+		String sql = String.format("UPDATE %s SET del=false WHERE (%s);", tm.getTable(),whereCnd);
+		return jdbcTemplate.update(sql, sqlArgs);
 	}
-
 	public <E,ID> int delete(Class<E> tbl, ID id) {
-		OOAssert.warnning(id != null, "ID不能为null");
+		if(id == null) return 0;
 		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
 		String sql = String.format("DELETE FROM %s WHERE id=?;", tm.getTable());
 		return jdbcTemplate.update(sql, id);
 	}
-
-	public <E extends BaseEntity<?>> int remove(Class<E> tbl, Cnd<E> cnd) {
-		// TODO Auto-generated method stub
-		return 0;
+	public <E,ID> int delete(Class<E> tbl, List<ID> ids) {
+		if(ids == null || ids.isEmpty()) return 0;
+		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		String sql = String.format("UPDATE %s SET del=false WHERE id in (%s);", tm.getTable());
+		return jdbcTemplate.update(sql, ids);
 	}
-
-	public <E extends BaseEntity<?>> int delete(Class<E> tbl,Cnd<E> cnd) {
-		// TODO Auto-generated method stub
-		return 0;
+	
+	public <E extends BaseEntity<?>> int delete(Class<E> tbl, Cnd<E> cnd) {
+		if (cnd == null) return 0;
+		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		List<Object> sqlArgs = new ArrayList<>();
+		String whereCnd = Cnd.sql(cnd, sqlArgs, this);
+		if (whereCnd.equals("")) {
+			return 0;
+		}
+		String sql = String.format("DELETE FROM %s WHERE (%s);", tm.getTable(), whereCnd);
+		return jdbcTemplate.update(sql, sqlArgs);
 	}
 
 
 	public <E extends BaseEntity<?>> long count(Class<E> tbl) {
-		// TODO Auto-generated method stub
-		return 0;
+		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		String sql = String.format("SELECT COUNT(1) FROM %s WHERE (%s);", tm.getTable());
+		return jdbcTemplate.queryForObject(sql, Long.class);
 	}
 
 	public <E extends BaseEntity<?>> long count(Class<E> tbl, Cnd<E> cnd) {
-		// TODO Auto-generated method stub
-		return 0;
+		if (cnd == null) return 0;
+		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		List<Object> sqlArgs = new ArrayList<>();
+		String whereCnd = Cnd.sql(cnd, sqlArgs, this);
+		if (whereCnd.equals("")) {
+			return 0;
+		}
+		String sql = String.format("SELECT COUNT(1) FROM %s WHERE (%s);", tm.getTable(), whereCnd);
+		return jdbcTemplate.queryForObject(sql, Long.class);
 	}
 
 	public <E extends BaseEntity<?>> Page<E> find(Class<E> tbl,Cnd<E> cnd) {
-		// TODO Auto-generated method stub
-		return null;
+		return find(tbl,null,cnd);
+	}
+	@SuppressWarnings("unchecked")
+	public <E extends BaseEntity<?>> Page<E> find(Class<E> tbl,E tmpl,Cnd<E> cnd) {
+		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		if(tm == null) {
+			return null;
+		}
+		Tuple2<String,Object[]> sqlAndArgs = queryFieldCnd(tm,tmpl,cnd);
+		RowMapper<E> rowMapper = null;
+		if(!tableToRowMapper.containsKey(tbl.getSimpleName())) {
+			rowMapper = genRowMapper(tbl,tm);
+			tableToRowMapper.put(tbl.getSimpleName(), rowMapper);
+		}else {
+			rowMapper = tableToRowMapper.get(tbl.getSimpleName());	
+		}
+		Page<E> page = new Page<E>();
+		if(cnd.getPage() == null ||cnd.getPage() <= 0) {
+			page.setPage(cnd.getPage());
+			if(cnd.getPage() == null || cnd.getPage() == 0) {
+				cnd.setPage(1);
+				page.setPage(0);
+			}else {
+				cnd.setPage(Math.abs(cnd.getPage()));
+			}
+			page.setTotal(count(tbl,cnd));
+			
+		}
+		if(page.getPage() > 0 && page.getTotal() > 0) {
+			List<E> data = jdbcTemplate.query(sqlAndArgs.a,sqlAndArgs.b, rowMapper);
+			page.setData(data);	
+		}else {
+			page.setPage(cnd.getPage());
+		}
+		return page;
 	}
 
-	public <E extends BaseEntity<?>> void download(Cnd<E> cnd, Consumer<E> consumer) {
-		// TODO Auto-generated method stub
-		
+	private <E extends BaseEntity<?>> Tuple2<String,Object[]> queryFieldCnd(TableMeta tm,E tmpl,Cnd<E> cnd) {
+		StringBuffer sqlSelect = new StringBuffer("SELECT ");
+		String columns = "*";
+		if(tmpl != null) {
+			Tuple2<String[], Object[]> nameVals = adapterForSelect(tmpl);
+			if(nameVals != null && nameVals.a.length > 0) {
+				sqlSelect.append(String.join(",", nameVals.a));		
+			}else {
+				sqlSelect.append(" * ");		
+			}
+		}else {
+			sqlSelect.append(" * ");
+		}
+		List<Object> sqlArgs = new ArrayList<>();
+		String whereCnd = Cnd.sql(cnd, sqlArgs, this);
+		if (whereCnd.equals("")) {
+			sqlSelect.append(String.format(" FROM %s", tm.getTable()));
+		} else {
+			sqlSelect.append(String.format(" FROM %s WHERE (%s)", columns, tm.getTable(), whereCnd));
+		}
+		String having = cnd.having();
+		if(having != null && !having.isEmpty()) {
+			sqlSelect.append(String.format(" HAVING %s", having));
+		}
+		String orderBy = cnd.orderBy();
+		if(orderBy != null && !orderBy.isEmpty()) {
+			sqlSelect.append(String.format(" ORDER BY %s", orderBy));
+		}
+		return new Tuple2<String,Object[]>(sqlSelect.toString(),sqlArgs.toArray(new Object[0]));
+	}
+	
+	public <E extends BaseEntity<?>> void download(Class<E> tbl,E tmpl,Cnd<E> cnd, Consumer<E> consumer) {
+		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		if(tm == null) {
+			return ;
+		}
+		Tuple2<String,Object[]> sqlAndArgs = queryFieldCnd(tm,tmpl,cnd);
+		jdbcTemplate.query(sqlAndArgs.a, sqlAndArgs.b, new RowCallbackHandler() {
+			@Override
+			public void processRow(ResultSet rs) throws SQLException {
+				E row = createBy(tbl, tm, rs);
+				consumer.accept(row);
+			}
+		});
 	}
 
 	@SuppressWarnings("unchecked")
@@ -408,9 +511,80 @@ public class DaoHelper implements TemplateAdapter{
 		List<E> values = jdbcTemplate.query(sql, ids.toArray(), rowMapper);
 		return values;
 	}
+	
+	
 	@Override
-	public <E> Tuple2<String[], Object[]> adapter(E tmpl) {
-		// TODO Auto-generated method stub
-		return null;
+	public <E> Tuple2<String[], Object[]> adapterForUpdate(E tmpl) {
+		if(tmpl == null) return null;
+		TableMeta tm = tableToTableMata.get(tmpl.getClass().getSimpleName());
+		if(tm == null) {
+			OOLog.warnning("无法找到 TableMeta:%s", tmpl.getClass());
+			return null;
+		}
+		List<String> names = new ArrayList<>();
+		List<Object> vals = new ArrayList<>();
+		for(ColumnMeta cm:tm.getColumnMetas()) {
+			try {
+				Object val = cm.getField().get(tmpl);
+				//TODO 没有处理val值
+				if(val != null) {
+					names.add(cm.getName());
+					vals.add(val);
+				}
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				OOLog.warnning("%s", e.getMessage());
+			}
+		}
+		return new Tuple2<String[], Object[]>(names.toArray(new String[0]),vals.toArray(new Object[0]));
+	}
+
+	@Override
+	public <E> Tuple2<String[], Object[]> adapterForSelect(E tmpl) {
+		if(tmpl == null) return null;
+		TableMeta tm = tableToTableMata.get(tmpl.getClass().getSimpleName());
+		if(tm == null) {
+			OOLog.warnning("无法找到 TableMeta:%s", tmpl.getClass());
+			return null;
+		}
+		List<String> names = new ArrayList<>();
+		List<Object> vals = new ArrayList<>();
+		for(ColumnMeta cm:tm.getColumnMetas()) {
+			try {
+				Object val = cm.getField().get(tmpl);
+				//TODO 没有处理val值
+				if(val != null) {
+					names.add(cm.getName());
+					vals.add(val);
+				}
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				OOLog.warnning("%s", e.getMessage());
+			}
+		}
+		return new Tuple2<String[], Object[]>(names.toArray(new String[0]),vals.toArray(new Object[0]));
+	}
+
+	@Override
+	public <E> Tuple2<String[], Object[]> adapterForWhere(E tmpl) {
+		if(tmpl == null) return null;
+		TableMeta tm = tableToTableMata.get(tmpl.getClass().getSimpleName());
+		if(tm == null) {
+			OOLog.warnning("无法找到 TableMeta:%s", tmpl.getClass());
+			return null;
+		}
+		List<String> names = new ArrayList<>();
+		List<Object> vals = new ArrayList<>();
+		for(ColumnMeta cm:tm.getColumnMetas()) {
+			try {
+				Object val = cm.getField().get(tmpl);
+				//TODO 没有处理val值
+				if(val != null) {
+					names.add(cm.getName());
+					vals.add(val);
+				}
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				OOLog.warnning("%s", e.getMessage());
+			}
+		}
+		return new Tuple2<String[], Object[]>(names.toArray(new String[0]),vals.toArray(new Object[0]));
 	}
 }

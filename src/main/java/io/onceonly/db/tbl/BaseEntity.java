@@ -1,5 +1,7 @@
 package io.onceonly.db.tbl;
 
+import java.util.Map;
+
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -18,6 +20,8 @@ public abstract class BaseEntity<ID>{
 	@JsonIgnore
     @Col(nullable = false)
 	protected boolean del = false;
+	/** 用户存储额外数据，如 聚合函数 */
+	protected Map<String,Object> extra;
 	
 	public BaseEntity() {
 	}
@@ -40,6 +44,14 @@ public abstract class BaseEntity<ID>{
 	public void setDel(boolean del) {
 		this.del = del;
 	}
+	
+	public Map<String, Object> getExtra() {
+		return extra;
+	}
+	public void setExtra(Map<String, Object> extra) {
+		this.extra = extra;
+	}
+
 	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
     @Override
 	public String toString(){
