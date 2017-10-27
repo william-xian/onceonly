@@ -2,10 +2,10 @@ package cn.mx.app.entity;
 
 import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Tbl;
-import io.onceonly.db.tbl.BaseEntity;
+import io.onceonly.db.tbl.OOEntity;
 
 @Tbl(extend=UserChief.class)
-public class UserProfile extends BaseEntity<Long>{
+public class UserProfile extends OOEntity<Long>{
     @Col(nullable = false, size=20)
 	private String nickname;
     @Col(nullable = false)

@@ -7,6 +7,11 @@ import io.onceonly.util.Tuple2;
  */
 public interface TemplateAdapter {
 	<E> Tuple2<String[],Object[]> adapterForUpdate(E tmpl);
+	
+	/**
+	 * 返回实际的数据，这里会处理del字段,
+	 */
 	<E> Tuple2<String[],Object[]> adapterForWhere(E tmpl);
+	
 	<E> Tuple2<String[],Object[]> adapterForSelect(E tmpl); 
 }

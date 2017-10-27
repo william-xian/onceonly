@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import io.onceonly.db.tbl.BaseEntity;
+import io.onceonly.db.tbl.OOEntity;
 
 /**
  * 内存间表关联
@@ -23,13 +23,13 @@ public class OOMemoryJoin {
 	public OOMemoryJoin(Class<?> mainEntity) {
 		this.mainEntity = mainEntity;
 	}
-	public <T extends BaseEntity<?>> OOMemoryJoin  putData(Class<T> type,List<T> data) {
+	public <T extends OOEntity<?>> OOMemoryJoin  putData(Class<T> type,List<T> data) {
 		Map<Object, Object> valueMap = values.get(type);
 		if (valueMap == null) {
 			valueMap = new HashMap<>();
 			values.put(type, valueMap);
 		}
-		for (BaseEntity<?> be : data) {
+		for (OOEntity<?> be : data) {
 			valueMap.put(be.getId(), be);
 		}
 		return this;

@@ -39,14 +39,26 @@ public final class DefTmpl {
 	public static final String CONCAT_AS_STR = "S";
 	public static final String CONCAT_AS_ARR = "A";
 
-	public static final byte ASC_B = 'A';
-	public static final byte DESC_B = 'D';
-	public static final char ASC_C = 'A';
-	public static final char DESC_C = 'D';
-	public static final int ASC_INT = 1;
-	public static final int DESC_INT = 2;
-	public static final long ASC_LONG = 1L;
-	public static final long DESC_LONG = 2L;
-	public static final String ASC_S = "A";
-	public static final String DESC_S = "D";
+	public static final byte ORDER_BY_ASC_B = 'A';
+	public static final byte ORDER_BY_DESC_B = 'D';
+	public static final char ORDER_BY_ASC_C = 'A';
+	public static final char ORDER_BY_DESC_C = 'D';
+	public static final int ORDER_BY_ASC_INT = 1;
+	public static final int ORDER_BY_DESC_INT = 2;
+	public static final long ORDER_BY_ASC_LONG = 1L;
+	public static final long ORDER_BY_DESC_LONG = 2L;
+	public static final String ORDER_BY_ASC_S = "A";
+	public static final String ORDER_BY_DESC_S = "D";
+
+	/**
+	 * 暂时只支持单目操作
+	 */
+	public static final int U_ADD = 1;
+	public static final int U_SUB = 2;
+	public static final int U_MUL = 3;
+	public static final int U_DIV = 4;
+	public static final int U_AND = 5;
+	public static final int U_OR = 6;
+	public static final int U_NOT = 7;
+	public static final int U_XOR = 8;
 }

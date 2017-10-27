@@ -13,23 +13,21 @@ import io.onceonly.db.annotation.OId;
  * @author Administrator
  *
  */
-public abstract class BaseEntity<ID>{
+public abstract class OOEntity<ID>{
 	@OId
     @Col(nullable = false)
 	protected ID id;
 	@JsonIgnore
     @Col(nullable = false)
-	protected boolean del = false;
+	protected boolean rm = false;
 	/** 用户存储额外数据，如 聚合函数 */
 	protected Map<String,Object> extra;
 	
-	public BaseEntity() {
+	public OOEntity() {
 	}
 	public void init() {
-		
 	}
 	public void initId(){
-		
 	}
 	public ID getId() {
 		return id;
@@ -37,12 +35,12 @@ public abstract class BaseEntity<ID>{
 	public void setId(ID id) {
 		this.id = id;
 	}
-	public boolean isDel() {
-		return del;
+	public Boolean isDel() {
+		return rm;
 	}
 
 	public void setDel(boolean del) {
-		this.del = del;
+		this.rm = del;
 	}
 	
 	public Map<String, Object> getExtra() {

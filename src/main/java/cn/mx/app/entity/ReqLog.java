@@ -2,10 +2,10 @@ package cn.mx.app.entity;
 
 import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Tbl;
-import io.onceonly.db.tbl.BaseEntity;
+import io.onceonly.db.tbl.OOEntity;
 
 @Tbl
-public class ReqLog extends BaseEntity<Long>{
+public class ReqLog extends OOEntity<Long>{
 	@Col(size = 255,nullable = true)
 	private String curUser;
 	@Col(size = 8,colDef="varchar(8) default ''",nullable = false)

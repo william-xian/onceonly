@@ -2,11 +2,11 @@ package cn.mx.app.entity;
 
 import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Tbl;
-import io.onceonly.db.tbl.BaseEntity;
+import io.onceonly.db.tbl.OOEntity;
 
 
 @Tbl(extend=UserChief.class,autoCreate=true)
-public class Wallet extends BaseEntity<Long>{
+public class Wallet extends OOEntity<Long>{
     @Col(nullable = true)
 	private int balance;
     @Col(nullable = true)

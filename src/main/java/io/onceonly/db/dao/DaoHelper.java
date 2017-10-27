@@ -17,25 +17,38 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.RowMapper;
 
+import io.onceonly.db.dao.impl.TemplateAdapterImpl;
 import io.onceonly.db.meta.ColumnMeta;
 import io.onceonly.db.meta.DDMeta;
 import io.onceonly.db.meta.TableMeta;
-import io.onceonly.db.tbl.BaseEntity;
+import io.onceonly.db.tbl.OOEntity;
 import io.onceonly.util.OOAssert;
 import io.onceonly.util.OOLog;
 import io.onceonly.util.OOReflectUtil;
 import io.onceonly.util.OOUtils;
 import io.onceonly.util.Tuple2;
 
-public class DaoHelper implements TemplateAdapter{
-	
+public class DaoHelper {
 	private JdbcTemplate jdbcTemplate;
-
-	private Map<String,TableMeta> tableToTableMata;
+	private Map<String,TableMeta> tableToTableMeta;
 	@SuppressWarnings("rawtypes")
 	private Map<String,RowMapper> tableToRowMapper = new HashMap<>();
 	private Map<String,DDMeta> tableToDDMata;
+	private TemplateAdapterImpl adapter;
 	
+	public DaoHelper(){
+	}
+	
+	public DaoHelper(JdbcTemplate jdbcTemplate, Map<String, TableMeta> tableToTableMeta) {
+		super();
+		init(jdbcTemplate,tableToTableMeta);
+	}
+	public void init(JdbcTemplate jdbcTemplate, Map<String, TableMeta> tableToTableMeta) {
+		this.jdbcTemplate = jdbcTemplate;
+		this.tableToTableMeta = tableToTableMeta;
+		this.adapter = new TemplateAdapterImpl(this.tableToTableMeta);
+	}
+
 	public JdbcTemplate getJdbcTemplate() {
 		return jdbcTemplate;
 	}
@@ -45,11 +58,12 @@ public class DaoHelper implements TemplateAdapter{
 	}
 	
 	public Map<String, TableMeta> getTableToTableMata() {
-		return tableToTableMata;
+		return tableToTableMeta;
 	}
 
-	public void setTableToTableMata(Map<String, TableMeta> tableToTableMata) {
-		this.tableToTableMata = tableToTableMata;
+	public void setTableToTableMata(Map<String, TableMeta> tableToTableMeta) {
+		this.tableToTableMeta = tableToTableMeta;
+		this.adapter = new TemplateAdapterImpl(this.tableToTableMeta);
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -70,14 +84,14 @@ public class DaoHelper implements TemplateAdapter{
 		this.tableToDDMata = tableToDDMata;
 	}
 
-	public <E extends BaseEntity<?>> boolean createOrUpdate(Class<E> tbl) {
-		TableMeta old = tableToTableMata.get(tbl.getSimpleName());
+	public <E extends OOEntity<?>> boolean createOrUpdate(Class<E> tbl) {
+		TableMeta old = tableToTableMeta.get(tbl.getSimpleName());
 		if(old == null) {
 			old = TableMeta.createBy(tbl);
 			List<String> sqls = old.createTableSql();
 			jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));
 			old.freshNameToField();
-			tableToTableMata.put(tbl.getSimpleName(), old);
+			tableToTableMeta.put(tbl.getSimpleName(), old);
 			return true;
 		}else {
 			TableMeta tm = TableMeta.createBy(tbl);
@@ -90,15 +104,15 @@ public class DaoHelper implements TemplateAdapter{
 					jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));	
 				}
 				tm.freshNameToField();
-				tableToTableMata.put(tbl.getSimpleName(), tm);
+				tableToTableMeta.put(tbl.getSimpleName(), tm);
 				return true;
 			}
 		}
 		return false;
 	}
 
-	public <E extends BaseEntity<?>> boolean drop(Class<E> tbl) {
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+	public <E extends OOEntity<?>> boolean drop(Class<E> tbl) {
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		if(tm == null) {
 			return false;
 		}
@@ -115,7 +129,7 @@ public class DaoHelper implements TemplateAdapter{
 		return jdbcTemplate.batchUpdate(sql, batchArgs);
 	}
 	
-	private static <E extends BaseEntity<?>> RowMapper<E> genRowMapper(Class<E> tbl,TableMeta tm) {
+	private static <E extends OOEntity<?>> RowMapper<E> genRowMapper(Class<E> tbl,TableMeta tm) {
 		RowMapper<E> rowMapper = new RowMapper<E>(){
 			@Override
 			public E mapRow(ResultSet rs, int rowNum) throws SQLException {
@@ -126,7 +140,7 @@ public class DaoHelper implements TemplateAdapter{
 		return rowMapper;
 	}
 	
-	public static <E extends BaseEntity<?>> E createBy(Class<E> tbl,TableMeta tm,ResultSet rs) throws SQLException {
+	public static <E extends OOEntity<?>> E createBy(Class<E> tbl,TableMeta tm,ResultSet rs) throws SQLException {
 		E row = null;
 		if(rs.next()) {
 			try {
@@ -146,8 +160,8 @@ public class DaoHelper implements TemplateAdapter{
 	}
 	
 	@SuppressWarnings("unchecked")
-	public <E extends BaseEntity<?>,ID> E get(Class<E> tbl,ID id) {
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+	public <E extends OOEntity<?>,ID> E get(Class<E> tbl,ID id) {
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		if(tm == null) {
 			return null;
 		}
@@ -169,7 +183,7 @@ public class DaoHelper implements TemplateAdapter{
 	/**
 	 * 第一个一定是主键
 	 */
-	private <E extends BaseEntity<?>> Tuple2<List<String>,List<List<Object>>> fetchNamesValues(List<ColumnMeta> columnMetas,boolean ignoreNull,List<E> entities) {
+	private <E extends OOEntity<?>> Tuple2<List<String>,List<List<Object>>> fetchNamesValues(List<ColumnMeta> columnMetas,boolean ignoreNull,List<E> entities) {
 		List<String> names = new ArrayList<>(columnMetas.size());
 		List<List<Object>> valsList = new ArrayList<>(entities.size());
 		boolean hasNames = false;
@@ -203,10 +217,10 @@ public class DaoHelper implements TemplateAdapter{
 		return new Tuple2<List<String>,List<List<Object>>>(names,valsList);
 	}
 	
-	public <E extends BaseEntity<?>> E insert(E entity) {
+	public <E extends OOEntity<?>> E insert(E entity) {
 		OOAssert.warnning(entity != null,"不可以插入null");
 		Class<?> tbl = entity.getClass();
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());	
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
 		Tuple2<List<String>,List<List<Object>>>  nameVals = fetchNamesValues(tm.getColumnMetas(),false,Arrays.asList(entity));
 		List<Object> vals = nameVals.b.get(0);
@@ -216,10 +230,10 @@ public class DaoHelper implements TemplateAdapter{
 		return entity;
 	}
 	
-	public <E extends BaseEntity<?>> int insert(List<E> entities) {
+	public <E extends OOEntity<?>> int insert(List<E> entities) {
 		OOAssert.warnning(entities != null && !entities.isEmpty(),"不可以插入null");
 		Class<?> tbl = entities.get(0).getClass();
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
 		Tuple2<List<String>,List<List<Object>>>  nameVals = fetchNamesValues(tm.getColumnMetas(),false,entities);
 		String stub = OOUtils.genStub("?",",",nameVals.a.size());
@@ -246,10 +260,10 @@ public class DaoHelper implements TemplateAdapter{
 		return cnt;
 	}
 
-	public <E extends BaseEntity<?>> int update(E entity) {
+	public <E extends OOEntity<?>> int update(E entity) {
 		OOAssert.warnning(entity != null,"不可以插入null");
 		Class<?> tbl = entity.getClass();
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());	
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
 		Tuple2<List<String>,List<List<Object>>>  nameVals = fetchNamesValues(tm.getColumnMetas(),false,Arrays.asList(entity));
 		List<Object> vals = nameVals.b.get(0);
@@ -263,10 +277,10 @@ public class DaoHelper implements TemplateAdapter{
 		return jdbcTemplate.update(sql, vals.toArray());
 	}
 
-	public <E extends BaseEntity<?>> int updateIgnoreNull(E entity) {
+	public <E extends OOEntity<?>> int updateIgnoreNull(E entity) {
 		OOAssert.warnning(entity != null,"不可以插入null");
 		Class<?> tbl = entity.getClass();
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());	
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
 		Tuple2<List<String>,List<List<Object>>>  nameVals = fetchNamesValues(tm.getColumnMetas(),true,Arrays.asList(entity));
 		List<Object> vals = nameVals.b.get(0);
@@ -280,12 +294,12 @@ public class DaoHelper implements TemplateAdapter{
 		return jdbcTemplate.update(sql, vals.toArray());
 	}
 
-	public <E extends BaseEntity<?>> int updateIncrement(E increment) {
+	public <E extends OOEntity<?>> int updateIncrement(E increment) {
 		OOAssert.warnning(increment != null,"不可以插入null");
 		Class<?> tbl = increment.getClass();
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());	
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
-		BaseEntity<?> be = (BaseEntity<?>) increment;
+		OOEntity<?> be = (OOEntity<?>) increment;
 		OOAssert.err(be.getId() != null,"ID 不能为NULL");
 		Tuple2<List<String>,List<List<Object>>>  nameVals = fetchNamesValues(tm.getColumnMetas(),true,Arrays.asList(increment));
 		List<Object> vals = nameVals.b.get(0);
@@ -309,10 +323,10 @@ public class DaoHelper implements TemplateAdapter{
 		return jdbcTemplate.update(sql, vals.toArray());
 	}
 
-	public <E extends BaseEntity<?>> int updateIncrement(E increment, Cnd<E> cnd) {
+	public <E extends OOEntity<?>> int updateIncrement(E increment, Cnd<E> cnd) {
 		OOAssert.warnning(increment != null,"不可以插入null");
 		Class<?> tbl = increment.getClass();
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());	
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
 		Tuple2<List<String>,List<List<Object>>>  nameVals = fetchNamesValues(tm.getColumnMetas(),true,Arrays.asList(increment));
 		List<Object> vals = nameVals.b.get(0);
@@ -328,7 +342,7 @@ public class DaoHelper implements TemplateAdapter{
 		}
 		settings.delete(settings.length()-1, settings.length());
 		List<Object> sqlArgs = new ArrayList<>();
-		String cndSql = Cnd.sql(cnd, sqlArgs, this);
+		String cndSql = Cnd.sql(cnd, sqlArgs, adapter);
 		if(cndSql.isEmpty()) {
 			OOAssert.warnning("查询条件不能为空");
 		}
@@ -340,23 +354,23 @@ public class DaoHelper implements TemplateAdapter{
 	public <E,ID> int remove(Class<E> tbl,ID id) {
 		if(id == null) return 0;
 		OOAssert.warnning(id != null,"ID不能为null");
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		String sql = String.format("UPDATE %s SET del=false WHERE id=?;", tm.getTable());
 		return jdbcTemplate.update(sql, id);
 	}
 
 	public <E,ID> int remove(Class<E> tbl, List<ID> ids) {
 		if(ids == null || ids.isEmpty()) return 0;
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		String stub = OOUtils.genStub("?",",",ids.size());
 		String sql = String.format("UPDATE %s SET del=false WHERE id in (%s);", tm.getTable(),stub);
 		return jdbcTemplate.update(sql, ids);
 	}
-	public <E extends BaseEntity<?>> int remove(Class<E> tbl, Cnd<E> cnd) {
+	public <E extends OOEntity<?>> int remove(Class<E> tbl, Cnd<E> cnd) {
 		if(cnd == null) return 0;
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		List<Object> sqlArgs = new ArrayList<>();
-		String whereCnd = Cnd.sql(cnd, sqlArgs, this);
+		String whereCnd = Cnd.sql(cnd, sqlArgs, adapter);
 		if(whereCnd.equals("")) {
 			return 0;
 		}
@@ -365,22 +379,22 @@ public class DaoHelper implements TemplateAdapter{
 	}
 	public <E,ID> int delete(Class<E> tbl, ID id) {
 		if(id == null) return 0;
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		String sql = String.format("DELETE FROM %s WHERE id=?;", tm.getTable());
 		return jdbcTemplate.update(sql, id);
 	}
 	public <E,ID> int delete(Class<E> tbl, List<ID> ids) {
 		if(ids == null || ids.isEmpty()) return 0;
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		String sql = String.format("UPDATE %s SET del=false WHERE id in (%s);", tm.getTable());
 		return jdbcTemplate.update(sql, ids);
 	}
 	
-	public <E extends BaseEntity<?>> int delete(Class<E> tbl, Cnd<E> cnd) {
+	public <E extends OOEntity<?>> int delete(Class<E> tbl, Cnd<E> cnd) {
 		if (cnd == null) return 0;
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		List<Object> sqlArgs = new ArrayList<>();
-		String whereCnd = Cnd.sql(cnd, sqlArgs, this);
+		String whereCnd = Cnd.sql(cnd, sqlArgs, adapter);
 		if (whereCnd.equals("")) {
 			return 0;
 		}
@@ -389,17 +403,17 @@ public class DaoHelper implements TemplateAdapter{
 	}
 
 
-	public <E extends BaseEntity<?>> long count(Class<E> tbl) {
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+	public <E extends OOEntity<?>> long count(Class<E> tbl) {
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		String sql = String.format("SELECT COUNT(1) FROM %s WHERE (%s);", tm.getTable());
 		return jdbcTemplate.queryForObject(sql, Long.class);
 	}
 
-	public <E extends BaseEntity<?>> long count(Class<E> tbl, Cnd<E> cnd) {
+	public <E extends OOEntity<?>> long count(Class<E> tbl, Cnd<E> cnd) {
 		if (cnd == null) return 0;
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		List<Object> sqlArgs = new ArrayList<>();
-		String whereCnd = Cnd.sql(cnd, sqlArgs, this);
+		String whereCnd = Cnd.sql(cnd, sqlArgs, adapter);
 		if (whereCnd.equals("")) {
 			return 0;
 		}
@@ -407,12 +421,12 @@ public class DaoHelper implements TemplateAdapter{
 		return jdbcTemplate.queryForObject(sql, Long.class);
 	}
 
-	public <E extends BaseEntity<?>> Page<E> find(Class<E> tbl,Cnd<E> cnd) {
+	public <E extends OOEntity<?>> Page<E> find(Class<E> tbl,Cnd<E> cnd) {
 		return find(tbl,null,cnd);
 	}
 	@SuppressWarnings("unchecked")
-	public <E extends BaseEntity<?>> Page<E> find(Class<E> tbl,E tmpl,Cnd<E> cnd) {
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+	public <E extends OOEntity<?>> Page<E> find(Class<E> tbl,E tmpl,Cnd<E> cnd) {
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		if(tm == null) {
 			return null;
 		}
@@ -445,11 +459,11 @@ public class DaoHelper implements TemplateAdapter{
 		return page;
 	}
 
-	private <E extends BaseEntity<?>> Tuple2<String,Object[]> queryFieldCnd(TableMeta tm,E tmpl,Cnd<E> cnd) {
+	private <E extends OOEntity<?>> Tuple2<String,Object[]> queryFieldCnd(TableMeta tm,E tmpl,Cnd<E> cnd) {
 		StringBuffer sqlSelect = new StringBuffer("SELECT ");
 		String columns = "*";
 		if(tmpl != null) {
-			Tuple2<String[], Object[]> nameVals = adapterForSelect(tmpl);
+			Tuple2<String[], Object[]> nameVals = adapter.adapterForSelect(tmpl);
 			if(nameVals != null && nameVals.a.length > 0) {
 				sqlSelect.append(String.join(",", nameVals.a));		
 			}else {
@@ -459,7 +473,7 @@ public class DaoHelper implements TemplateAdapter{
 			sqlSelect.append(" * ");
 		}
 		List<Object> sqlArgs = new ArrayList<>();
-		String whereCnd = Cnd.sql(cnd, sqlArgs, this);
+		String whereCnd = Cnd.sql(cnd, sqlArgs, adapter);
 		if (whereCnd.equals("")) {
 			sqlSelect.append(String.format(" FROM %s", tm.getTable()));
 		} else {
@@ -476,8 +490,8 @@ public class DaoHelper implements TemplateAdapter{
 		return new Tuple2<String,Object[]>(sqlSelect.toString(),sqlArgs.toArray(new Object[0]));
 	}
 	
-	public <E extends BaseEntity<?>> void download(Class<E> tbl,E tmpl,Cnd<E> cnd, Consumer<E> consumer) {
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+	public <E extends OOEntity<?>> void download(Class<E> tbl,E tmpl,Cnd<E> cnd, Consumer<E> consumer) {
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		if(tm == null) {
 			return ;
 		}
@@ -492,11 +506,11 @@ public class DaoHelper implements TemplateAdapter{
 	}
 
 	@SuppressWarnings("unchecked")
-	public <E extends BaseEntity<?>,ID> List<E> findByIds(Class<E> tbl, List<ID> ids) {
+	public <E extends OOEntity<?>,ID> List<E> findByIds(Class<E> tbl, List<ID> ids) {
 		if(ids.isEmpty()) {
 			return new ArrayList<E>();
 		}
-		TableMeta tm = tableToTableMata.get(tbl.getSimpleName());
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		if(tm == null) {
 		}
 		RowMapper<E> rowMapper = null;
@@ -512,79 +526,4 @@ public class DaoHelper implements TemplateAdapter{
 		return values;
 	}
 	
-	
-	@Override
-	public <E> Tuple2<String[], Object[]> adapterForUpdate(E tmpl) {
-		if(tmpl == null) return null;
-		TableMeta tm = tableToTableMata.get(tmpl.getClass().getSimpleName());
-		if(tm == null) {
-			OOLog.warnning("无法找到 TableMeta:%s", tmpl.getClass());
-			return null;
-		}
-		List<String> names = new ArrayList<>();
-		List<Object> vals = new ArrayList<>();
-		for(ColumnMeta cm:tm.getColumnMetas()) {
-			try {
-				Object val = cm.getField().get(tmpl);
-				//TODO 没有处理val值
-				if(val != null) {
-					names.add(cm.getName());
-					vals.add(val);
-				}
-			} catch (IllegalArgumentException | IllegalAccessException e) {
-				OOLog.warnning("%s", e.getMessage());
-			}
-		}
-		return new Tuple2<String[], Object[]>(names.toArray(new String[0]),vals.toArray(new Object[0]));
-	}
-
-	@Override
-	public <E> Tuple2<String[], Object[]> adapterForSelect(E tmpl) {
-		if(tmpl == null) return null;
-		TableMeta tm = tableToTableMata.get(tmpl.getClass().getSimpleName());
-		if(tm == null) {
-			OOLog.warnning("无法找到 TableMeta:%s", tmpl.getClass());
-			return null;
-		}
-		List<String> names = new ArrayList<>();
-		List<Object> vals = new ArrayList<>();
-		for(ColumnMeta cm:tm.getColumnMetas()) {
-			try {
-				Object val = cm.getField().get(tmpl);
-				//TODO 没有处理val值
-				if(val != null) {
-					names.add(cm.getName());
-					vals.add(val);
-				}
-			} catch (IllegalArgumentException | IllegalAccessException e) {
-				OOLog.warnning("%s", e.getMessage());
-			}
-		}
-		return new Tuple2<String[], Object[]>(names.toArray(new String[0]),vals.toArray(new Object[0]));
-	}
-
-	@Override
-	public <E> Tuple2<String[], Object[]> adapterForWhere(E tmpl) {
-		if(tmpl == null) return null;
-		TableMeta tm = tableToTableMata.get(tmpl.getClass().getSimpleName());
-		if(tm == null) {
-			OOLog.warnning("无法找到 TableMeta:%s", tmpl.getClass());
-			return null;
-		}
-		List<String> names = new ArrayList<>();
-		List<Object> vals = new ArrayList<>();
-		for(ColumnMeta cm:tm.getColumnMetas()) {
-			try {
-				Object val = cm.getField().get(tmpl);
-				//TODO 没有处理val值
-				if(val != null) {
-					names.add(cm.getName());
-					vals.add(val);
-				}
-			} catch (IllegalArgumentException | IllegalAccessException e) {
-				OOLog.warnning("%s", e.getMessage());
-			}
-		}
-		return new Tuple2<String[], Object[]>(names.toArray(new String[0]),vals.toArray(new Object[0]));
-	}
 }

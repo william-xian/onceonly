@@ -2,10 +2,10 @@ package cn.mx.app.entity;
 
 import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Tbl;
-import io.onceonly.db.tbl.BaseEntity;
+import io.onceonly.db.tbl.OOEntity;
 
 @Tbl
-public class GoodsShipping extends BaseEntity<Long> {
+public class GoodsShipping extends OOEntity<Long> {
 	@Col(ref=GoodsOrder.class, nullable = false)
 	private long goodsOrderId;
 	@Col(ref=UserChief.class,nullable = false)

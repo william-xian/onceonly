@@ -211,7 +211,7 @@ public class Cnd<E> {
 	
 	public static void main(String[] args) {
 		Wallet order = new Wallet();
-		order.setExpenditure(DefTmpl.ASC_INT);
+		order.setExpenditure(DefTmpl.ORDER_BY_ASC_INT);
 		Wallet e = new Wallet();
 		e.setId(DefTmpl.SHOW_LONG);
 		Cnd<Wallet> cnd = new Cnd<>();
