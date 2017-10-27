@@ -53,7 +53,13 @@ public class DaoImpl<E,ID> implements Dao<E,ID> {
 	}
 
 	@Override
-	public int updateIncrement(E increment) {
+	public int updateByTmpl(E entity, E tmpl) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int updateByTmplCnd(E entity, E tmpl, Cnd<E> cnd) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
@@ -71,7 +77,25 @@ public class DaoImpl<E,ID> implements Dao<E,ID> {
 	}
 
 	@Override
+	public int remove(Cnd<E> cnd) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
 	public int delete(ID id) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int delete(List<ID> ids) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int delete(Cnd<E> cnd) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
@@ -89,43 +113,7 @@ public class DaoImpl<E,ID> implements Dao<E,ID> {
 	}
 
 	@Override
-	public int update(E newVal, String pattern, Cnd<E> cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int updateIncrement(E increment, Cnd<E> cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int updateXOR(E arg, Cnd<E> cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int remove(Cnd<E> cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int delete(Cnd<E> cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public Page<E> search(Cnd<E> cnd) {
-		// TODO Auto-generated method stub
-		return null;
-	}
-
-	@Override
-	public List<E> find(Cnd<E> cnd) {
+	public Page<E> find(Cnd<E> cnd) {
 		// TODO Auto-generated method stub
 		return null;
 	}
@@ -147,6 +135,5 @@ public class DaoImpl<E,ID> implements Dao<E,ID> {
 		// TODO Auto-generated method stub
 		return 0;
 	}
-
 
 }
