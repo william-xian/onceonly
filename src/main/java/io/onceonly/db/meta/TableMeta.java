@@ -324,6 +324,7 @@ public class TableMeta {
 				OId oid = field.getAnnotation(OId.class);
 				if (oid != null) {
 					primaryKeys.add(field.getName());
+					cm.setPrimaryKey(true);
 				}
 				cm.setNullable(col.nullable());
 				cm.setPattern(col.pattern());

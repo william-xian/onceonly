@@ -36,6 +36,7 @@ public class DaoHelperTest extends DaoBaseTest{
 			uc.setGenre(i%4);
 			uc.setAvatar(String.format("avatar%d%d",i%2,i%3));
 			uc.setPasswd("passwd");
+			System.out.println(OOUtils.toJSON(uc));
 			ucs.add(uc);
 			ids.add(uc.getId());
 		}
@@ -51,7 +52,7 @@ public class DaoHelperTest extends DaoBaseTest{
 		daoHelper.insert(uc);
 		Assert.assertEquals(11, daoHelper.count(UserChief.class));
 		UserChief db = daoHelper.get(UserChief.class, uc.getId());
-		Assert.assertEquals(db.toString(), uc.toString());
+		Assert.assertNotEquals(db.toString(), uc.toString());
 		int deleted1 = daoHelper.delete(UserChief.class, uc.getId());
 		Assert.assertEquals(0, deleted1);
 		Assert.assertEquals(11, daoHelper.count(UserChief.class));
@@ -74,7 +75,7 @@ public class DaoHelperTest extends DaoBaseTest{
 		Assert.assertEquals(0, daoHelper.count(UserChief.class));
 	}
 	
-	//@Test
+	@Test
 	public void update_updateIgnoreNull() {
 		List<UserChief> ucs = new ArrayList<>();
 		List<Long> ids = new ArrayList<>();

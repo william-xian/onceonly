@@ -218,16 +218,18 @@ public class DaoHelper {
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
 		TblIdNameVal<E> idNameVal = new TblIdNameVal<>(tm.getColumnMetas(),entities);
 		for(int i = 0; i < idNameVal.ids.size(); i++) {
-			if(idNameVal.getIdAt(0) == null) {
+			if(idNameVal.getIdAt(i) == null) {
 				Object id = idGenerator.next(tbl);
 				idNameVal.setIdAt(i, id);
 			}	
 		}
-		
+
+		OOLog.debug("--mx befroeDrop %s\n",OOUtils.toJSON(idNameVal));
 		idNameVal.dropAllNullColumns();
+		OOLog.debug("--mx drop %s\n",OOUtils.toJSON(idNameVal));
 		List<String> names = idNameVal.getIdNames();
 		List<List<Object>> valsList = idNameVal.getIdValsList();
-		OOLog.debug("%s\n",OOUtils.toJSON(valsList));
+		OOLog.debug("--mx valsList %s\n",OOUtils.toJSON(valsList));
 		String stub = OOUtils.genStub("?",",",names.size());
 		String sql = String.format("INSERT INTO %s(%s) VALUES(%s);", tm.getTable(),String.join(",", names),stub);
 		
@@ -528,103 +530,114 @@ public class DaoHelper {
 		return values;
 	}
 	
-	class TblIdNameVal<E>{
-		List<Object> ids;
-		List<String> names;
-		List<List<Object>> valsList;
-		public TblIdNameVal(List<ColumnMeta> columnMetas,List<E> entities) {
-				ids = new ArrayList<>(columnMetas.size());
-				names = new ArrayList<>(columnMetas.size());
-				valsList = new ArrayList<>(entities.size());
-				boolean hasNames = false;
-				for(E entity:entities) {
-					if(entity == null) continue;
-					List<Object> vals = new ArrayList<>(columnMetas.size());
-					valsList.add(vals);
-					for(ColumnMeta cm:columnMetas) {
-						if(!hasNames) {
-							if(!cm.isPrimaryKey()) {
-								names.add(cm.getName());
-							}
-						}
-						try {
-							Object val = cm.getField().get(entity);
-							if(cm.isPrimaryKey() ) {
-								ids.add(val);
-							}else{
-								vals.add(val);
-							}
-						} catch (IllegalArgumentException | IllegalAccessException e) {
-							OOAssert.warnning("%s.%s 访问异常:%s", entity.getClass().getSimpleName(),cm.getName(),e.getMessage());
+}
+class TblIdNameVal<E>{
+	List<Object> ids;
+	List<String> names;
+	List<List<Object>> valsList;
+	public TblIdNameVal(List<ColumnMeta> columnMetas,List<E> entities) {
+			ids = new ArrayList<>(columnMetas.size());
+			names = new ArrayList<>(columnMetas.size());
+			valsList = new ArrayList<>(entities.size());
+			boolean hasNames = false;
+			for(E entity:entities) {
+				if(entity == null) continue;
+				List<Object> vals = new ArrayList<>(columnMetas.size());
+				valsList.add(vals);
+				for(ColumnMeta cm:columnMetas) {
+					if(!hasNames) {
+						if(!cm.isPrimaryKey()) {
+							names.add(cm.getName());
 						}
 					}
-					hasNames = true;
-				}
-			}
-		public Object getIdAt(int index) {
-			return ids.get(0);
-		}
-		public Object setIdAt(int index,Object val) {
-			return ids.set(index,val);
-		}
-		public List<String> getNames() {
-			return names;
-		}
-		public List<String> getIdNames() {
-			List<String> idNames = new ArrayList<>();
-			idNames.add("id");
-			idNames.addAll(names);
-			return idNames;
-		}
-		public List<List<Object>> getValsList() {
-			return valsList;
-		}
-		public List<List<Object>> getIdValsList() {
-			List<List<Object>> idValsList = new ArrayList<>();
-			for(int i = 0; i < ids.size();i++) {
-				Object id = ids.get(i);
-				List<Object> row = valsList.get(i);
-				List<Object> idRow = new ArrayList<>(row.size()+1);
-				idRow.add(id);
-				idRow.addAll(row);
-				idValsList.add(idRow);
-			}
-			return idValsList;
-		}
-		public void dropAllNullColumns() {
-			List<Integer> nullColumnsIndex = new ArrayList<>();
-			OUTER:for(Integer i = names.size()-1; i >=0; i--) {
-					for(List<Object> row :valsList) {
-						if(row.get(i) != null) {
-							continue OUTER;
+					try {
+						Object val = cm.getField().get(entity);
+						if(cm.isPrimaryKey()) {
+							ids.add(val);
+						}else{
+							vals.add(val);
 						}
+					} catch (IllegalArgumentException | IllegalAccessException e) {
+						OOAssert.warnning("%s.%s 访问异常:%s", entity.getClass().getSimpleName(),cm.getName(),e.getMessage());
 					}
-					nullColumnsIndex.add(i);
-			}
-			for(Integer j:nullColumnsIndex) {
-				names.remove((int)j);
-				for(List<Object> row :valsList) {
-					row.remove((int)j);
 				}
+				hasNames = true;
 			}
 		}
-	
-		public void dropColumns(String colName) {
-			int rm = -1;
-			for(int i = 0; i <names.size(); i++) {
-				if(names.get(i).equals(colName)) {
-					rm = i;
-					break;
-				}
-			}
-			if(rm >=0) {
-				names.remove(rm);
-				for(List<Object> row :valsList) {
-					row.remove(rm);
-				}
-			}
-		}
-	
+	public Object getIdAt(int index) {
+		return ids.get(0);
 	}
-	
+	public Object setIdAt(int index,Object val) {
+		return ids.set(index,val);
+	}
+	public List<String> getNames() {
+		return names;
+	}
+	public List<String> getIdNames() {
+		List<String> idNames = new ArrayList<>();
+		idNames.add("id");
+		idNames.addAll(names);
+		return idNames;
+	}
+	public List<List<Object>> getValsList() {
+		return valsList;
+	}
+	public List<List<Object>> getIdValsList() {
+		List<List<Object>> idValsList = new ArrayList<>();
+		System.out.println("--mx-"+OOUtils.toJSON(ids));
+		System.out.println("--mx-"+OOUtils.toJSON(valsList));
+		for(int i = 0; i < ids.size();i++) {
+			Object id = ids.get(i);
+			List<Object> row = valsList.get(i);
+			List<Object> idRow = new ArrayList<>(row.size()+1);
+			idRow.add(id);
+			idRow.addAll(row);
+			idValsList.add(idRow);
+		}
+		System.out.println("--mx-"+OOUtils.toJSON(idValsList));
+		return idValsList;
+	}
+
+	public void dropAllNullColumns() {
+		List<Integer> nullColumnsIndex = new ArrayList<>();
+		System.out.println("names:" + OOUtils.toJSON(names));
+		OUTER: for (Integer i = names.size() - 1; i >= 0; i--) {
+			for (List<Object> row : valsList) {
+				if (row.get(i) != null) {
+					continue OUTER;
+				}
+			}
+			nullColumnsIndex.add(i);
+		}
+		System.out.println("----" + OOUtils.toJSON(nullColumnsIndex));
+		System.out.println("----" + OOUtils.toJSON(names));
+		System.out.println("----" + OOUtils.toJSON(valsList));
+		for (Integer j : nullColumnsIndex) {
+			names.remove((int) j);
+			for (List<Object> row : valsList) {
+				row.remove((int) j);
+			}
+		}
+
+		System.out.println("-------------------------------------------");
+		System.out.println("----" + OOUtils.toJSON(names));
+		System.out.println("----" + OOUtils.toJSON(valsList));
+	}
+
+	public void dropColumns(String colName) {
+		int rm = -1;
+		for(int i = 0; i < names.size(); i++) {
+			if(names.get(i).equals(colName)) {
+				rm = i;
+				break;
+			}
+		}
+		if(rm >=0) {
+			names.remove(rm);
+			for(List<Object> row :valsList) {
+				row.remove(rm);
+			}
+		}
+	}
+
 }
