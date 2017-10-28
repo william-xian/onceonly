@@ -10,10 +10,9 @@ import java.util.List;
 
 public class OOReflectUtil {
 
-	public static Type searchGenType(Class<?> forefather,Class<?> entity,Type fieldType)
+	public static Class<?> searchGenType(Class<?> forefather,Class<?> entity,Type fieldType)
 	{
 		List<Class<?>> classes = new ArrayList<>();
-		Type type = null;
 		Integer typeIndex = null;
 		for(Class<?> clazz = entity;!clazz.equals(forefather);clazz=clazz.getSuperclass()) {
 			classes.add(0, clazz);
@@ -33,8 +32,9 @@ public class OOReflectUtil {
 					if(genericTypes != null) {
 						fieldType = genericTypes[pi];
 						typeIndex = pi;
-						if(isBaseType(fieldType)) {
-							return fieldType;
+						Class<?> javaBaseType = tranBaseType(fieldType);
+						if(javaBaseType!=null) {
+							return javaBaseType;
 						}
 					}else {
 						typeIndex = pi;
@@ -47,23 +47,25 @@ public class OOReflectUtil {
 				for(TypeVariable<?> t:son.getTypeParameters()) {
 					if(fieldType != null && fieldType.equals(t)) {
 						fieldType = t;
-						if(isBaseType(fieldType)) {
-							return fieldType;
+						Class<?> javaBaseType = tranBaseType(fieldType);
+						if(javaBaseType!=null) {
+							return javaBaseType;
 						}
 						break;
 					}
 				}
 			}else if(typeIndex != null){
 				fieldType=son.getTypeParameters()[typeIndex];
-				if(isBaseType(fieldType)) {
-					return fieldType;
+				Class<?> javaBaseType = tranBaseType(fieldType);
+				if(javaBaseType!=null) {
+					return javaBaseType;
 				}
 			}else {
 				return  null;
 			}
 	        father = son;
 		}
-	    return type;
+	    return null;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -124,6 +126,33 @@ public class OOReflectUtil {
 			return true;
 		}
 		return false;
+	}
+	
+	public static Class<?> tranBaseType(Type type) {
+		if (type == String.class) {
+			return String.class;
+		}else if (type == Character.class || type == char.class) {
+			return Character.class;
+		}else if (type == Integer.class || type == int.class) {
+			return Integer.class;
+		} else if (type == Long.class || type == long.class) {
+			return Long.class;
+		}else if (type == Boolean.class || type == boolean.class) {
+			return Boolean.class;
+		}else if (type == Byte.class || type == byte.class) {
+			return Byte.class;
+		}else if (type == Short.class || type == short.class) {
+			return Short.class;
+		}else if (type == Float.class || type == float.class) {
+			return Float.class;
+		}else if (type == Double.class || type == double.class) {
+			return Double.class;
+		}else if (type == BigDecimal.class) {
+			return BigDecimal.class;
+		}else if (type == Date.class) {
+			return Date.class;
+		}
+		return null;
 	}
 
 	public static boolean isNumber(Object obj) {

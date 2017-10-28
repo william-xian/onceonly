@@ -17,6 +17,7 @@ public class ColumnMeta {
 	 */
 	String pattern;
 	transient Field field;
+	transient Class<?> javaBaseType;
 	public String getName() {
 		return name;
 	}
@@ -83,5 +84,10 @@ public class ColumnMeta {
 	public void setField(Field field) {
 		this.field = field;
 	}
-	
+	public Class<?> getJavaBaseType() {
+		return javaBaseType;
+	}
+	public void setJavaBaseType(Class<?> javaBaseType) {
+		this.javaBaseType = javaBaseType;
+	}
 }

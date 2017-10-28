@@ -249,5 +249,9 @@ public class Cnd<E> {
 		// TODO Auto-generated method stub
 		return null;
 	}
+	public String group() {
+		// TODO Auto-generated method stub
+		return null;
+	}
 }
 

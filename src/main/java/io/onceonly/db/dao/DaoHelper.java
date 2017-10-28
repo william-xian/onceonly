@@ -17,6 +17,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.RowCallbackHandler;
 import org.springframework.jdbc.core.RowMapper;
 
+import io.onceonly.OOConfig;
 import io.onceonly.db.dao.impl.TemplateAdapterImpl;
 import io.onceonly.db.meta.ColumnMeta;
 import io.onceonly.db.meta.DDMeta;
@@ -136,6 +137,7 @@ public class DaoHelper {
 		RowMapper<E> rowMapper = new RowMapper<E>(){
 			@Override
 			public E mapRow(ResultSet rs, int rowNum) throws SQLException {
+				System.out.println("--" + rs.getFetchSize());
 				E row = createBy(tbl,tm,rs);
 				return row;
 			}
@@ -149,9 +151,11 @@ public class DaoHelper {
 			try {
 				row = tbl.newInstance();
 				List<ColumnMeta> columnMetas = tm.getColumnMetas();
+				System.out.println("-- " + OOUtils.toJSON(columnMetas));
 				for(ColumnMeta colMeta:columnMetas) {
 					Field field = colMeta.getField();
-					Object val = rs.getObject(colMeta.getName(), field.getType());
+					Object val = rs.getObject(colMeta.getName(), colMeta.getJavaBaseType());
+					System.out.printf("%s,\n", val.toString());
 					field.set(row, val);
 				}
 				
@@ -358,6 +362,7 @@ public class DaoHelper {
 		if(id == null) return 0;
 		OOAssert.warnning(id != null,"ID不能为null");
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
+		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
 		String sql = String.format("UPDATE %s SET del=false WHERE id=?;", tm.getTable());
 		return jdbcTemplate.update(sql, id);
 	}
@@ -431,9 +436,7 @@ public class DaoHelper {
 	@SuppressWarnings("unchecked")
 	public <E extends OOEntity<?>> Page<E> find(Class<E> tbl,E tmpl,Cnd<E> cnd) {
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
-		if(tm == null) {
-			return null;
-		}
+		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
 		Tuple2<String,Object[]> sqlAndArgs = queryFieldCnd(tm,tmpl,cnd);
 		RowMapper<E> rowMapper = null;
 		if(!tableToRowMapper.containsKey(tbl.getSimpleName())) {
@@ -452,45 +455,64 @@ public class DaoHelper {
 				cnd.setPage(Math.abs(cnd.getPage()));
 			}
 			page.setTotal(count(tbl,cnd));
-			
 		}
-		if(page.getPage() > 0 && page.getTotal() > 0) {
-			List<E> data = jdbcTemplate.query(sqlAndArgs.a,sqlAndArgs.b, rowMapper);
-			page.setData(data);	
-		}else {
-			page.setPage(cnd.getPage());
+		if(cnd.getPageSize() == null) {
+			cnd.setPageSize(OOConfig.PAGE_SIZE_DEFAULT);
+			page.setPageSize(OOConfig.PAGE_SIZE_DEFAULT);
+		}else if(cnd.getPageSize() > OOConfig.PAGE_SIZE_MAX) {
+			cnd.setPageSize(OOConfig.PAGE_SIZE_MAX);
+			page.setPageSize(OOConfig.PAGE_SIZE_MAX);
+		}
+		if(page.getTotal() == null || page.getTotal() > 0) {
+			StringBuffer sql = new StringBuffer(sqlAndArgs.a);
+			String orderBy = cnd.orderBy();
+			if(orderBy != null && !orderBy.isEmpty()) {
+				sql.append(String.format(" ORDER BY %s", orderBy));
+			}
+			//TODO
+			sql.append(" LIMIT ? OFFSET ?");
+			List<Object> args = new ArrayList<>();
+			args.addAll(Arrays.asList(sqlAndArgs.b));
+			args.addAll(Arrays.asList(cnd.getPageSize(),(cnd.getPage()-1)*cnd.getPageSize()));
+			System.out.println(sql.toString() + " - " + OOUtils.toJSON(args));
+			String tSql = "SELECT * FROM UserChief WHERE (((genre=?)  OR (genre!=?) ) AND NOT((avatar LIKE ?))) LIMIT ? OFFSET ?"; 
+			Object[] tArgs = new Object[] {2,3,"avatar%00",20,0};
+			List<E> data = jdbcTemplate.query(tSql,tArgs, rowMapper);
+			
+			//List<E> data = jdbcTemplate.query(sql.toString(),args.toArray(new Object[0]), rowMapper);
+			page.setData(data);
 		}
 		return page;
 	}
 
 	private <E extends OOEntity<?>> Tuple2<String,Object[]> queryFieldCnd(TableMeta tm,E tmpl,Cnd<E> cnd) {
-		StringBuffer sqlSelect = new StringBuffer("SELECT ");
-		String columns = "*";
+		StringBuffer sqlSelect = new StringBuffer("SELECT");
 		if(tmpl != null) {
 			Tuple2<String[], Object[]> nameVals = adapter.adapterForSelect(tmpl);
 			if(nameVals != null && nameVals.a.length > 0) {
-				sqlSelect.append(String.join(",", nameVals.a));		
+				sqlSelect.append(" " + String.join(",", nameVals.a));		
 			}else {
-				sqlSelect.append(" * ");		
+				sqlSelect.append(" *");		
 			}
 		}else {
-			sqlSelect.append(" * ");
+			sqlSelect.append(" *");
 		}
 		List<Object> sqlArgs = new ArrayList<>();
 		String whereCnd = Cnd.sql(cnd, sqlArgs, adapter);
 		if (whereCnd.equals("")) {
 			sqlSelect.append(String.format(" FROM %s", tm.getTable()));
 		} else {
-			sqlSelect.append(String.format(" FROM %s WHERE (%s)", columns, tm.getTable(), whereCnd));
+			sqlSelect.append(String.format(" FROM %s WHERE (%s)", tm.getTable(), whereCnd));
 		}
 		String having = cnd.having();
 		if(having != null && !having.isEmpty()) {
 			sqlSelect.append(String.format(" HAVING %s", having));
 		}
-		String orderBy = cnd.orderBy();
-		if(orderBy != null && !orderBy.isEmpty()) {
-			sqlSelect.append(String.format(" ORDER BY %s", orderBy));
+		String group = cnd.group();
+		if(group != null && !group.isEmpty()) {
+			sqlSelect.append(String.format(" GROUP BY %s", group));
 		}
+		
 		return new Tuple2<String,Object[]>(sqlSelect.toString(),sqlArgs.toArray(new Object[0]));
 	}
 	

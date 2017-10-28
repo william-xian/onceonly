@@ -107,6 +107,12 @@ public class TableMeta {
 					if(cm != null){
 						field.setAccessible(true);
 						cm.setField(field);
+						if(field.getType().equals(field.getGenericType())) {
+							cm.setJavaBaseType(field.getType());
+						}else {
+							Class<?> jbt = OOReflectUtil.searchGenType(clazz, classes.get(classes.size()-1), field.getGenericType());
+							cm.setJavaBaseType(jbt);
+						}
 						missed.remove(field.getName());
 					}
 				}	
@@ -345,10 +351,12 @@ public class TableMeta {
 		tm.setPrimaryKey(primaryKeys.get(0));
 		return tm;
 	}
-	/** 以postgresql為准 */
+	/**  
+	 * 以postgresql為准 */
 	private static String transType(Class<?> forefather,Class<?> clazz,Field field,Col col) {
 		Type type = field.getGenericType();
 		if(field.getType() == Object.class) {
+			//TODO 
 			Type clazzType = OOReflectUtil.searchGenType(forefather, clazz, type);
 			if(clazzType != null){
 				type = clazzType;
