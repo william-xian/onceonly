@@ -273,6 +273,7 @@ public class DaoHelper {
 		List<String> names = idNameVal.getNames();
 		List<Object> vals = idNameVal.getValsList().get(0);
 		String sql = String.format("UPDATE %s SET %s=? WHERE id=? and rm = false;", tm.getTable(),String.join("=?,", names));
+		vals.add(id);
 		return jdbcTemplate.update(sql, vals.toArray());
 	}
 

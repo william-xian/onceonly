@@ -35,10 +35,12 @@ public abstract class OOEntity<ID>{
 	public void setId(ID id) {
 		this.id = id;
 	}
-	public Boolean isDel() {
+	public Boolean getRm() {
 		return rm;
 	}
-	
+	public void setRm(Boolean rm) {
+		this.rm = rm;
+	}
 	public Map<String, Object> getExtra() {
 		return extra;
 	}

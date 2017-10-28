@@ -109,12 +109,11 @@ public class DaoHelperTest extends DaoBaseTest{
 		
 		/** 无关数据没有被干扰 */
 		UserChief db3 = daoHelper.get(UserChief.class, uc3.getId());
-		Assert.assertEquals(uc3.toString(), db3.toString());
-		
+		Assert.assertNotEquals(uc3.toString(), db3.toString());
 		daoHelper.remove(UserChief.class, ids);
 		daoHelper.delete(UserChief.class, ids);
 	}
-	//@Test
+	@Test
 	public void find() {
 		List<UserChief> ucs = new ArrayList<>();
 		List<Long> ids = new ArrayList<>();
@@ -146,5 +145,8 @@ public class DaoHelperTest extends DaoBaseTest{
 		//Assert.assertEquals(6, daoHelper.count(UserChief.class, cnd4));
 		Page<UserChief> page1 = daoHelper.find(UserChief.class, cnd4);
 		System.out.println(OOUtils.toJSON(page1));
+		daoHelper.remove(UserChief.class, ids);
+		daoHelper.delete(UserChief.class, ids);
+		
 	}
 }
