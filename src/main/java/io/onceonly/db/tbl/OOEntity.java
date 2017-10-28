@@ -18,7 +18,7 @@ public abstract class OOEntity<ID>{
     @Col(nullable = false)
 	protected ID id;
 	@JsonIgnore
-    @Col(nullable = false)
+    @Col(colDef="boolean default false",nullable = false)
 	protected Boolean rm;
 	/** 用户存储额外数据，如 聚合函数 */
 	protected Map<String,Object> extra;
@@ -37,10 +37,6 @@ public abstract class OOEntity<ID>{
 	}
 	public Boolean isDel() {
 		return rm;
-	}
-
-	public void setDel(boolean del) {
-		this.rm = del;
 	}
 	
 	public Map<String, Object> getExtra() {

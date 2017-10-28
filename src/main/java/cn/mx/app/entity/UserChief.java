@@ -18,25 +18,29 @@ public class UserChief extends OOEntity<Long>{
 	public String getName() {
 		return name;
 	}
-	public void setName(String name) {
+	public UserChief setName(String name) {
 		this.name = name;
+		return this;
 	}
 	public String getPasswd() {
 		return passwd;
 	}
-	public void setPasswd(String passwd) {
+	public UserChief setPasswd(String passwd) {
 		this.passwd = passwd;
+		return this;
 	}
 	public String getAvatar() {
 		return avatar;
 	}
-	public void setAvatar(String avatar) {
+	public UserChief setAvatar(String avatar) {
 		this.avatar = avatar;
+		return this;
 	}
 	public Integer getGenre() {
 		return genre;
 	}
-	public void setGenre(Integer genre) {
+	public UserChief setGenre(Integer genre) {
 		this.genre = genre;
+		return this;
 	}
 }

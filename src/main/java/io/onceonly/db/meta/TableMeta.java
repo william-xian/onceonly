@@ -1,7 +1,6 @@
 package io.onceonly.db.meta;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.Type;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;

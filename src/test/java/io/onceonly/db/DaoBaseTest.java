@@ -5,18 +5,19 @@ import java.io.IOException;
 import java.util.Properties;
 
 import org.apache.tomcat.jdbc.pool.DataSource;
-import org.junit.BeforeClass;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import io.onceonly.db.dao.DaoHelper;
+import io.onceonly.db.dao.IdGenerator;
+import io.onceonly.util.IDGenerator;
 
 public class DaoBaseTest {
 	protected static final JdbcTemplate jdbcTemplate = new JdbcTemplate();
 
 	protected static final DaoHelper daoHelper = new DaoHelper();
 	
-	@BeforeClass
-	public static void init() throws IOException {
+	public static void initDao() {
+		try {
 		Properties prop = new Properties();
 		prop.load(new FileInputStream("src/main/resources/application.properties"));
 		String driver = prop.getProperty("spring.datasource.driver");
@@ -32,10 +33,20 @@ public class DaoBaseTest {
 		ds.setMaxActive(Integer.parseInt(maxActive));
 		jdbcTemplate.setDataSource(ds);
 		System.out.println("loaded jdbcTemplate");
-		
+		IdGenerator generator = new IdGenerator() {
+			@Override
+			public Object next(Class<?> entityClass) {
+				return IDGenerator.randomID();
+			}
+			
+		};
 		DDHoster.upgrade();
 		daoHelper.setTableToTableMata(DDHoster.tableToTableMeta);
 		daoHelper.setJdbcTemplate(jdbcTemplate);
+		daoHelper.setIdGenerator(generator);;
+		}catch(IOException e) {
+			e.printStackTrace();
+		}
 	}
 	
 }
