@@ -329,7 +329,17 @@ public class TableMeta {
 				cm.setNullable(col.nullable());
 				cm.setPattern(col.pattern());
 				if (col.colDef().equals("")) {
-					String type = transType(clazz,entity,field, col);
+					Class<?> javaBaseType = cm.getJavaBaseType();
+					if(javaBaseType == null) {
+						if(field.getType() == Object.class) {
+							javaBaseType = OOReflectUtil.searchGenType(clazz, classes.get(classes.size()-1), field.getGenericType());
+							cm.setJavaBaseType(javaBaseType);
+						}else {
+							javaBaseType = field.getType();
+							cm.setJavaBaseType(javaBaseType);
+						}
+					}
+					String type = transType(clazz,entity,javaBaseType, col);
 					cm.setType(type);
 				} else {
 					cm.setType(col.colDef());
@@ -353,17 +363,7 @@ public class TableMeta {
 	}
 	/**  
 	 * 以postgresql為准 */
-	private static String transType(Class<?> forefather,Class<?> clazz,Field field,Col col) {
-		Type type = field.getGenericType();
-		if(field.getType() == Object.class) {
-			//TODO 
-			Type clazzType = OOReflectUtil.searchGenType(forefather, clazz, type);
-			if(clazzType != null){
-				type = clazzType;
-			}else {
-				OOAssert.fatal("不支持的数据类型:%s", type);
-			}
-		}
+	private static String transType(Class<?> forefather,Class<?> clazz,Class<?> type,Col col) {
 		if(type.equals(Long.class) || type.equals(long.class)) {
 			return "bigint";
 		}else if(type.equals(String.class)) {
