@@ -25,7 +25,6 @@ import io.onceonly.db.meta.TableMeta;
 import io.onceonly.db.tbl.OOEntity;
 import io.onceonly.util.OOAssert;
 import io.onceonly.util.OOLog;
-import io.onceonly.util.OOReflectUtil;
 import io.onceonly.util.OOUtils;
 import io.onceonly.util.Tuple2;
 
@@ -101,7 +100,6 @@ public class DaoHelper {
 			old = TableMeta.createBy(tbl);
 			List<String> sqls = old.createTableSql();
 			if(!sqls.isEmpty()) {
-				System.out.println(String.join(",", sqls.toArray(new String[0])));
 				jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));	
 			}
 			old.freshNameToField();
@@ -113,7 +111,6 @@ public class DaoHelper {
 				return false;
 			} else if(tm != null){
 				List<String> sqls = old.upgradeTo(tm);
-				System.out.println(OOUtils.toJSON(sqls));
 				if(!sqls.isEmpty()){
 					jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));	
 				}
@@ -224,12 +221,9 @@ public class DaoHelper {
 			}	
 		}
 
-		OOLog.debug("--mx befroeDrop %s\n",OOUtils.toJSON(idNameVal));
 		idNameVal.dropAllNullColumns();
-		OOLog.debug("--mx drop %s\n",OOUtils.toJSON(idNameVal));
 		List<String> names = idNameVal.getIdNames();
 		List<List<Object>> valsList = idNameVal.getIdValsList();
-		OOLog.debug("--mx valsList %s\n",OOUtils.toJSON(valsList));
 		String stub = OOUtils.genStub("?",",",names.size());
 		String sql = String.format("INSERT INTO %s(%s) VALUES(%s);", tm.getTable(),String.join(",", names),stub);
 		
@@ -285,56 +279,34 @@ public class DaoHelper {
 	public <E extends OOEntity<?>> int updateIgnoreNull(E entity) {
 		return update(entity,true);	
 	}
-
-	public <E extends OOEntity<?>> int updateIncrement(E increment) {
-		OOAssert.err((increment!=null)&&(increment.getId() != null),"ID 不能为NULL");
-		Cnd<E> cnd = new Cnd<E>();
-		try {
-			@SuppressWarnings("unchecked")
-			E tpl = (E) increment.getClass().newInstance();
-			cnd.eq(tpl);
-		} catch (InstantiationException | IllegalAccessException e) {
-			OOAssert.err(e.getMessage());
-		}
-		return updateIncrement(increment,cnd);
-	}
-
-	public <E extends OOEntity<?>> int updateIncrement(E increment, Cnd<E> cnd) {
-		OOAssert.warnning(increment != null,"不可以插入null");
-		Class<?> tbl = increment.getClass();
+	
+	public <E extends OOEntity<?>> int updateByTmpl(Class<E> tbl,E entity, E tmpl) {
+		OOAssert.warnning(entity != null && tmpl != null,"Are you sure to update a null value?");
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
-		TblIdNameVal<E> idNameVal = new TblIdNameVal<>(tm.getColumnMetas(),Arrays.asList(increment));
-		Object id = idNameVal.getIdAt(0);
-		OOAssert.err(id != null,"ID 不能为NULL");
-		/** ignore rm */
-		idNameVal.dropColumns("rm");
-		idNameVal.dropAllNullColumns();
-		
-		List<String> names = idNameVal.getNames();
-		List<Object> vals = idNameVal.getValsList().get(0);
-		
-		StringBuffer settings = new StringBuffer();
-		for(int i = 0; i < names.size(); i++) {
-			String name = names.get(i);
-			Object val = vals.get(i);
-			if(OOReflectUtil.isNumber(val)) {
-				settings.append(String.format("%s=%s+(?),", name));
-			}else if(OOReflectUtil.isCharacter(val)) {
-				settings.append(String.format("%s=%s||?,", name));	
-			}
-		}
-		settings.delete(settings.length()-1, settings.length());
-		
+		Tuple2<String,List<Object>> tuple = DefTmpl.getSettings(tm, entity, tmpl);
+		List<Object> vals = new ArrayList<>();
+		vals.addAll(tuple.b);
+		vals.add(entity.getId());
+		String sql = String.format("UPDATE %s SET %s WHERE id=? and rm=false;", tm.getTable(),tuple.a);
+		return jdbcTemplate.update(sql, vals.toArray());
+	}
+	
+	public <E extends OOEntity<?>> int updateByTmplCnd(Class<E> tbl,E entity, E tmpl,Cnd<E> cnd) {
+		OOAssert.warnning(entity != null && tmpl != null,"Are you sure to update a null value?");
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
+		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
+		Tuple2<String,List<Object>> tuple = DefTmpl.getSettings(tm, entity, tmpl);
+		List<Object> vals = new ArrayList<>();
+		vals.addAll(tuple.b);
 		List<Object> sqlArgs = new ArrayList<>();
 		String cndSql = Cnd.sql(cnd, sqlArgs, adapter);
 		if(cndSql.isEmpty()) {
 			OOAssert.warnning("查询条件不能为空");
 		}
 		vals.addAll(sqlArgs);
-		String sql = String.format("UPDATE %s SET %s WHERE (%s) and rm=false;", tm.getTable(),settings,cndSql);
+		String sql = String.format("UPDATE %s SET %s WHERE (%s) and rm=false;", tm.getTable(),tuple.a,cndSql);
 		return jdbcTemplate.update(sql, vals.toArray());
-		
 	}
 
 	public <E,ID> int remove(Class<E> tbl,ID id) {
@@ -430,7 +402,7 @@ public class DaoHelper {
 			page.setPage(cnd.getPage());
 			if(cnd.getPage() == null || cnd.getPage() == 0) {
 				cnd.setPage(1);
-				page.setPage(0);
+				page.setPage(1);
 			}else {
 				cnd.setPage(Math.abs(cnd.getPage()));
 			}
@@ -449,16 +421,12 @@ public class DaoHelper {
 			if(orderBy != null && !orderBy.isEmpty()) {
 				sql.append(String.format(" ORDER BY %s", orderBy));
 			}
-			//TODO
+			//TODO O1
 			sql.append(" LIMIT ? OFFSET ?");
 			List<Object> args = new ArrayList<>();
 			args.addAll(Arrays.asList(sqlAndArgs.b));
 			args.addAll(Arrays.asList(cnd.getPageSize(),(cnd.getPage()-1)*cnd.getPageSize()));
-			String tSql = "SELECT * FROM UserChief WHERE (((genre=?)  OR (genre!=?) ) AND NOT((avatar LIKE ?))) LIMIT ? OFFSET ?"; 
-			Object[] tArgs = new Object[] {2,3,"avatar%00",20,0};
-			List<E> data = jdbcTemplate.query(tSql,tArgs, rowMapper);
-			
-			//List<E> data = jdbcTemplate.query(sql.toString(),args.toArray(new Object[0]), rowMapper);
+			List<E> data = jdbcTemplate.query(sql.toString(),args.toArray(new Object[0]), rowMapper);
 			page.setData(data);
 		}
 		return page;
@@ -530,6 +498,8 @@ public class DaoHelper {
 		List<E> values = jdbcTemplate.query(sql, ids.toArray(), rowMapper);
 		return values;
 	}
+
+
 	
 }
 class TblIdNameVal<E>{
@@ -585,8 +555,6 @@ class TblIdNameVal<E>{
 	}
 	public List<List<Object>> getIdValsList() {
 		List<List<Object>> idValsList = new ArrayList<>();
-		System.out.println("--mx-"+OOUtils.toJSON(ids));
-		System.out.println("--mx-"+OOUtils.toJSON(valsList));
 		for(int i = 0; i < ids.size();i++) {
 			Object id = ids.get(i);
 			List<Object> row = valsList.get(i);
@@ -595,13 +563,11 @@ class TblIdNameVal<E>{
 			idRow.addAll(row);
 			idValsList.add(idRow);
 		}
-		System.out.println("--mx-"+OOUtils.toJSON(idValsList));
 		return idValsList;
 	}
 
 	public void dropAllNullColumns() {
 		List<Integer> nullColumnsIndex = new ArrayList<>();
-		System.out.println("names:" + OOUtils.toJSON(names));
 		OUTER: for (Integer i = names.size() - 1; i >= 0; i--) {
 			for (List<Object> row : valsList) {
 				if (row.get(i) != null) {
@@ -610,19 +576,12 @@ class TblIdNameVal<E>{
 			}
 			nullColumnsIndex.add(i);
 		}
-		System.out.println("----" + OOUtils.toJSON(nullColumnsIndex));
-		System.out.println("----" + OOUtils.toJSON(names));
-		System.out.println("----" + OOUtils.toJSON(valsList));
 		for (Integer j : nullColumnsIndex) {
 			names.remove((int) j);
 			for (List<Object> row : valsList) {
 				row.remove((int) j);
 			}
 		}
-
-		System.out.println("-------------------------------------------");
-		System.out.println("----" + OOUtils.toJSON(names));
-		System.out.println("----" + OOUtils.toJSON(valsList));
 	}
 
 	public void dropColumns(String colName) {

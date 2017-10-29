@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-import cn.mx.app.entity.Wallet;
 import io.onceonly.util.OOLog;
 import io.onceonly.util.OOUtils;
 import io.onceonly.util.Tuple2;
@@ -24,6 +23,7 @@ public class Cnd<E> {
 	private List<Tuple2<SqlLogic,Cnd<E>>> cnds = new ArrayList<>();
 	private List<Tuple3<SqlOpt,E,Object[]>> opts = new ArrayList<>();
 	private List<SqlLogic> optsLogic = new ArrayList<>();
+
 	public Cnd() {
 	}
 	public Integer getPageSize() {
@@ -229,15 +229,6 @@ public class Cnd<E> {
 			
 		}
 		return self.toString();
-	}
-	
-	public static void main(String[] args) {
-		Wallet order = new Wallet();
-		order.setExpenditure(DefTmpl.ORDER_BY_ASC_INT);
-		Wallet e = new Wallet();
-		e.setId(DefTmpl.SHOW_LONG);
-		Cnd<Wallet> cnd = new Cnd<>();
-		cnd.eq(e).and().in(e,new Long[] {1L,2L}).orderBy(Arrays.asList(order));
 	}
 	
 	public String having() {

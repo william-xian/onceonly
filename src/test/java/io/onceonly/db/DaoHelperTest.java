@@ -25,7 +25,7 @@ public class DaoHelperTest extends DaoBaseTest{
 	public static void cleanup() {
 		daoHelper.drop(UserChief.class);
 	}
-	@Test
+	//@Test
 	public void insert_get_remove_delete() {
 		List<UserChief> ucs = new ArrayList<>();
 		List<Long> ids = new ArrayList<>();
@@ -75,7 +75,7 @@ public class DaoHelperTest extends DaoBaseTest{
 		Assert.assertEquals(0, daoHelper.count(UserChief.class));
 	}
 	
-	@Test
+	//@Test
 	public void update_updateIgnoreNull() {
 		List<UserChief> ucs = new ArrayList<>();
 		List<Long> ids = new ArrayList<>();
@@ -109,10 +109,37 @@ public class DaoHelperTest extends DaoBaseTest{
 		
 		/** 无关数据没有被干扰 */
 		UserChief db3 = daoHelper.get(UserChief.class, uc3.getId());
-		Assert.assertNotEquals(uc3.toString(), db3.toString());
+		uc3.setRm(false);
+		Assert.assertEquals(uc3.toString(), db3.toString());
 		daoHelper.remove(UserChief.class, ids);
 		daoHelper.delete(UserChief.class, ids);
 	}
+	
+	public void updateEntityByTempl() {
+		List<UserChief> ucs = new ArrayList<>();
+		List<Long> ids = new ArrayList<>();
+		for(int i = 0; i < 3; i++) {
+			UserChief uc = new UserChief();
+			uc.setId(IDGenerator.randomID());
+			uc.setName("name"+i + "-" + System.currentTimeMillis());
+			uc.setGenre(i%4);
+			uc.setAvatar(String.format("avatar%d%d",i%2,i%3));
+			uc.setPasswd("passwd");
+			ucs.add(uc);
+			ids.add(uc.getId());
+		}
+		daoHelper.insert(ucs);
+		UserChief uc1 = ucs.get(0);
+		UserChief uc2 = ucs.get(1);
+
+		UserChief opt = new UserChief();
+		
+		daoHelper.updateByTmpl(UserChief.class,uc1,opt);
+		
+		daoHelper.remove(UserChief.class, ids);
+		daoHelper.delete(UserChief.class, ids);
+	}
+	
 	@Test
 	public void find() {
 		List<UserChief> ucs = new ArrayList<>();
@@ -142,9 +169,12 @@ public class DaoHelperTest extends DaoBaseTest{
 		Cnd<UserChief> cnd4 = new Cnd<>();
 		/** (genre=2 or genre != 3) and not (avatar like 'avatar%00')*/
 		cnd4.and(cnd1).not(cnd3);
-		//Assert.assertEquals(6, daoHelper.count(UserChief.class, cnd4));
+		Assert.assertEquals(6, daoHelper.count(UserChief.class, cnd4));
+		cnd4.setPage(-2);
+		cnd4.setPageSize(4);
 		Page<UserChief> page1 = daoHelper.find(UserChief.class, cnd4);
-		System.out.println(OOUtils.toJSON(page1));
+		Assert.assertEquals(2,page1.getData().size());
+		Assert.assertEquals(6,page1.getTotal().longValue());
 		daoHelper.remove(UserChief.class, ids);
 		daoHelper.delete(UserChief.class, ids);
 		
