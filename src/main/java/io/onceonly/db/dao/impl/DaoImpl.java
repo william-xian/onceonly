@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import io.onceonly.db.dao.Cnd;
 import io.onceonly.db.dao.Dao;
 import io.onceonly.db.dao.Page;
+import io.onceonly.db.dao.UpdateTpl;
 
 
 public class DaoImpl<E,ID> implements Dao<E,ID> {
@@ -51,19 +52,7 @@ public class DaoImpl<E,ID> implements Dao<E,ID> {
 		// TODO Auto-generated method stub
 		return 0;
 	}
-
-	@Override
-	public int updateByTmpl(E entity, E tmpl) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
-	@Override
-	public int updateByTmplCnd(E entity, E tmpl, Cnd<E> cnd) {
-		// TODO Auto-generated method stub
-		return 0;
-	}
-
+	
 	@Override
 	public int remove(ID id) {
 		// TODO Auto-generated method stub
@@ -132,6 +121,18 @@ public class DaoImpl<E,ID> implements Dao<E,ID> {
 
 	@Override
 	public long count(Cnd<E> cnd) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int updateByTmpl(E entity, UpdateTpl<E> tmpl) {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public int updateByTmplCnd(E entity, UpdateTpl<E> tmpl, Cnd<E> cnd) {
 		// TODO Auto-generated method stub
 		return 0;
 	}

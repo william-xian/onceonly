@@ -9,8 +9,8 @@ public interface Dao<T,ID> {
 	int insert(List<T> entities);
 	int update(T entity);
 	int updateIgnoreNull(T entity);
-	int updateByTmpl(T entity, T tmpl);
-	int updateByTmplCnd(T entity, T tmpl,Cnd<T> cnd);
+	int updateByTmpl(T entity, UpdateTpl<T> tmpl);
+	int updateByTmplCnd(T entity, UpdateTpl<T> tmpl,Cnd<T> cnd);
 	int remove(ID id);
 	int remove(List<ID> ids);
 	int remove(Cnd<T> cnd);

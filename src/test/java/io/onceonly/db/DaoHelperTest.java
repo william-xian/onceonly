@@ -10,8 +10,8 @@ import org.junit.Test;
 
 import cn.mx.app.entity.UserChief;
 import io.onceonly.db.dao.Cnd;
-import io.onceonly.db.dao.DefTmpl;
 import io.onceonly.db.dao.Page;
+import io.onceonly.db.dao.UpdateTpl;
 import io.onceonly.util.IDGenerator;
 import io.onceonly.util.OOUtils;
 
@@ -135,9 +135,9 @@ public class DaoHelperTest extends DaoBaseTest{
 		UserChief arg = new UserChief();
 		arg.setId(uc1.getId());
 		arg.setGenre(1);
-		UserChief opt = new UserChief();
-		opt.setGenre(DefTmpl.U_ADD);
-		daoHelper.updateByTmpl(UserChief.class,arg,opt);
+		UpdateTpl<UserChief> tpl = new UpdateTpl<>(UserChief.class);
+		tpl.getVal().setGenre(UpdateTpl.U_ADD);
+		daoHelper.updateByTmpl(UserChief.class,arg,tpl);
 		UserChief db1 = daoHelper.get(UserChief.class, arg.getId());
 		Assert.assertEquals(1,db1.getGenre().intValue());
 		UserChief db2 = daoHelper.get(UserChief.class, uc2.getId());

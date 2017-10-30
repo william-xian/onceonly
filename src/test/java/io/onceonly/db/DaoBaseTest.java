@@ -7,8 +7,8 @@ import java.util.Properties;
 import org.apache.tomcat.jdbc.pool.DataSource;
 import org.springframework.jdbc.core.JdbcTemplate;
 
-import io.onceonly.db.dao.DaoHelper;
 import io.onceonly.db.dao.IdGenerator;
+import io.onceonly.db.dao.impl.DaoHelper;
 import io.onceonly.util.IDGenerator;
 
 public class DaoBaseTest {
