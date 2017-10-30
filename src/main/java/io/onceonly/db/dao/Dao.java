@@ -3,6 +3,8 @@ package io.onceonly.db.dao;
 import java.util.List;
 import java.util.function.Consumer;
 
+import io.onceonly.db.dao.tpl.UpdateTpl;
+
 public interface Dao<T,ID> {
 	T get(ID id);
 	T insert(T entity);

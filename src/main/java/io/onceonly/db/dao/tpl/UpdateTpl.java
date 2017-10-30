@@ -1,4 +1,4 @@
-package io.onceonly.db.dao;
+package io.onceonly.db.dao.tpl;
 
 import java.util.ArrayList;
 import java.util.Arrays;

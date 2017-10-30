@@ -8,7 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import io.onceonly.db.dao.Cnd;
 import io.onceonly.db.dao.Dao;
 import io.onceonly.db.dao.Page;
-import io.onceonly.db.dao.UpdateTpl;
+import io.onceonly.db.dao.tpl.UpdateTpl;
 
 
 public class DaoImpl<E,ID> implements Dao<E,ID> {

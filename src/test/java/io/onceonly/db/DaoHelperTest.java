@@ -11,7 +11,7 @@ import org.junit.Test;
 import cn.mx.app.entity.UserChief;
 import io.onceonly.db.dao.Cnd;
 import io.onceonly.db.dao.Page;
-import io.onceonly.db.dao.UpdateTpl;
+import io.onceonly.db.dao.tpl.UpdateTpl;
 import io.onceonly.util.IDGenerator;
 import io.onceonly.util.OOUtils;
 

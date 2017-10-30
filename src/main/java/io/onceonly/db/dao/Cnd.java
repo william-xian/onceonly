@@ -23,7 +23,6 @@ public class Cnd<E> {
 	private List<Tuple2<SqlLogic,Cnd<E>>> cnds = new ArrayList<>();
 	private List<Tuple3<SqlOpt,E,Object[]>> opts = new ArrayList<>();
 	private List<SqlLogic> optsLogic = new ArrayList<>();
-
 	public Cnd() {
 	}
 	public Integer getPageSize() {

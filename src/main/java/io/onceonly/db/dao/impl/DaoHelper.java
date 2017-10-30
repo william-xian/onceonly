@@ -21,7 +21,7 @@ import io.onceonly.OOConfig;
 import io.onceonly.db.dao.Cnd;
 import io.onceonly.db.dao.IdGenerator;
 import io.onceonly.db.dao.Page;
-import io.onceonly.db.dao.UpdateTpl;
+import io.onceonly.db.dao.tpl.UpdateTpl;
 import io.onceonly.db.meta.ColumnMeta;
 import io.onceonly.db.meta.DDMeta;
 import io.onceonly.db.meta.TableMeta;
