@@ -10,6 +10,7 @@ import org.junit.Test;
 
 import cn.mx.app.entity.UserChief;
 import io.onceonly.db.dao.Cnd;
+import io.onceonly.db.dao.DefTmpl;
 import io.onceonly.db.dao.Page;
 import io.onceonly.util.IDGenerator;
 import io.onceonly.util.OOUtils;
@@ -115,14 +116,14 @@ public class DaoHelperTest extends DaoBaseTest{
 		daoHelper.delete(UserChief.class, ids);
 	}
 	
-	public void updateEntityByTempl() {
+	public void updateByTempl() {
 		List<UserChief> ucs = new ArrayList<>();
 		List<Long> ids = new ArrayList<>();
 		for(int i = 0; i < 3; i++) {
 			UserChief uc = new UserChief();
 			uc.setId(IDGenerator.randomID());
 			uc.setName("name"+i + "-" + System.currentTimeMillis());
-			uc.setGenre(i%4);
+			uc.setGenre(i);
 			uc.setAvatar(String.format("avatar%d%d",i%2,i%3));
 			uc.setPasswd("passwd");
 			ucs.add(uc);
@@ -131,11 +132,17 @@ public class DaoHelperTest extends DaoBaseTest{
 		daoHelper.insert(ucs);
 		UserChief uc1 = ucs.get(0);
 		UserChief uc2 = ucs.get(1);
-
+		UserChief arg = new UserChief();
+		arg.setId(uc1.getId());
+		arg.setGenre(1);
 		UserChief opt = new UserChief();
-		
-		daoHelper.updateByTmpl(UserChief.class,uc1,opt);
-		
+		opt.setGenre(DefTmpl.U_ADD);
+		daoHelper.updateByTmpl(UserChief.class,arg,opt);
+		UserChief db1 = daoHelper.get(UserChief.class, arg.getId());
+		Assert.assertEquals(1,db1.getGenre().intValue());
+		UserChief db2 = daoHelper.get(UserChief.class, uc2.getId());
+		uc2.setRm(false);
+		Assert.assertEquals(uc2.toString(),db2.toString());
 		daoHelper.remove(UserChief.class, ids);
 		daoHelper.delete(UserChief.class, ids);
 	}
