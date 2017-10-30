@@ -11,7 +11,6 @@ public class SelectTpl<E> extends HavingTpl<E>{
 	public static final char SHOW_CHAR = '1';
 	public static final String SHOW_STR = "1";
 	
-
 	public static final byte DISTINCT_BYTE = 3;
 	public static final int DISTINCT_INT = 3;
 	public static final long DISTINCT_LONG = 3;
@@ -21,5 +20,4 @@ public class SelectTpl<E> extends HavingTpl<E>{
 	public static final String CONCAT_AS_STR = "S";
 	public static final String CONCAT_AS_ARR = "A";
 	
-
 }
