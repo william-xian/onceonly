@@ -3,6 +3,7 @@ package io.onceonly.db.dao;
 import java.util.List;
 import java.util.function.Consumer;
 
+import io.onceonly.db.dao.tpl.SelectTpl;
 import io.onceonly.db.dao.tpl.UpdateTpl;
 
 public interface Dao<T,ID> {
@@ -16,20 +17,14 @@ public interface Dao<T,ID> {
 	int remove(ID id);
 	int remove(List<ID> ids);
 	int remove(Cnd<T> cnd);
+	int recovery(Cnd<T> cnd);
 	int delete(ID id);
 	int delete(List<ID> ids);
 	int delete(Cnd<T> cnd);
-	
 	List<T> findByIds(List<ID> ids);
-	Page<T> findByEntity(T entity,Integer page,Integer pageSize);
-	
-	/**
-	 * 数值为判等
-	 * 字符串为正则匹配
-	 */
 	Page<T> find(Cnd<T> cnd);
-	void download(Cnd<T> cnd,Consumer<T> consumer);
-	
+	Page<T> findTpl(SelectTpl<T> tpl,Cnd<T> cnd);
+	void download(SelectTpl<T> tpl,Cnd<T> cnd,Consumer<T> consumer);
 	long count();
 	long count(Cnd<T> cnd);
 }
