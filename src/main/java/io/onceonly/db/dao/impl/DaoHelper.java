@@ -420,7 +420,7 @@ public class DaoHelper {
 		}
 		if(page.getTotal() == null || page.getTotal() > 0) {
 			StringBuffer sql = new StringBuffer(sqlAndArgs.a);
-			String orderBy = cnd.orderBy();
+			String orderBy = cnd.getOrder();
 			if(orderBy != null && !orderBy.isEmpty()) {
 				sql.append(String.format(" ORDER BY %s", orderBy));
 			}

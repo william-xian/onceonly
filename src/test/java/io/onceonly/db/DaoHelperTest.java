@@ -166,14 +166,14 @@ public class DaoHelperTest extends DaoBaseTest{
 		e1.setGenre(2);
 		UserChief e2 = new UserChief();
 		e2.setGenre(3);
-		Cnd<UserChief> cnd1 = new Cnd<>();
+		Cnd<UserChief> cnd1 = new Cnd<>(UserChief.class);
 		cnd1.eq(e1).or().ne(e2);
 		UserChief e3 = new UserChief();
-		Cnd<UserChief> cnd3 = new Cnd<>();
+		Cnd<UserChief> cnd3 = new Cnd<>(UserChief.class);
 		e3.setAvatar("avatar%00");
 		cnd3.like(e3);
 		Assert.assertEquals(2, daoHelper.count(UserChief.class, cnd3));
-		Cnd<UserChief> cnd4 = new Cnd<>();
+		Cnd<UserChief> cnd4 = new Cnd<>(UserChief.class);
 		/** (genre=2 or genre != 3) and not (avatar like 'avatar%00')*/
 		cnd4.and(cnd1).not(cnd3);
 		Assert.assertEquals(6, daoHelper.count(UserChief.class, cnd4));

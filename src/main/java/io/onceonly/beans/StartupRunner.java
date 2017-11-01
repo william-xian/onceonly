@@ -37,7 +37,7 @@ public class StartupRunner implements CommandLineRunner {
     private final static AnnotationScanner annotations = new AnnotationScanner(OOI18n.class,I18nMsg.class,I18nCfg.class);
  
     private void loadI18nToCache(){
-    	Cnd<OOI18n> cnd = new Cnd<>();
+    	Cnd<OOI18n> cnd = new Cnd<>(OOI18n.class);
     	cnd.setPage(1);
     	cnd.setPageSize(Integer.MAX_VALUE);
         Page<OOI18n> i18ns = i18nRepository.find(cnd);

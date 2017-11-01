@@ -4,6 +4,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import io.onceonly.db.dao.tpl.GroupTpl;
+import io.onceonly.db.dao.tpl.HavingTpl;
+import io.onceonly.db.dao.tpl.OrderTpl;
 import io.onceonly.util.OOLog;
 import io.onceonly.util.OOUtils;
 import io.onceonly.util.Tuple2;
@@ -19,11 +22,16 @@ public class Cnd<E> {
 	}
 	private Integer page;
 	private Integer pageSize;
-	private List<E> order = new ArrayList<>();
 	private List<Tuple2<SqlLogic,Cnd<E>>> cnds = new ArrayList<>();
 	private List<Tuple3<SqlOpt,E,Object[]>> opts = new ArrayList<>();
 	private List<SqlLogic> optsLogic = new ArrayList<>();
-	public Cnd() {
+	
+	private List<HavingTpl<E>> having;
+	private OrderTpl<E> order;
+	private GroupTpl<E> group;
+	private Class<E> tplClass;
+	public Cnd(Class<E> tplClass) {
+		this.tplClass = tplClass;
 	}
 	public Integer getPageSize() {
 		return pageSize;
@@ -37,12 +45,6 @@ public class Cnd<E> {
 	}
 	public Integer getPage() {
 		return page;
-	}
-	public List<E> getOrder() {
-		return order;
-	}
-	public void orderBy(List<E> tmpl) {
-		this.order.addAll(tmpl);
 	}
 	public Cnd<E> eq(E e) {
 		opts.add(new Tuple3<SqlOpt, E,Object[]>(SqlOpt.EQ,e,null));
@@ -235,13 +237,32 @@ public class Cnd<E> {
 		return null;
 	}
 	
-	public String orderBy() {
-		// TODO Auto-generated method stub
-		return null;
+	public OrderTpl<E> orderBy() {
+		if(order == null) {
+			order = new OrderTpl<E>(tplClass);
+		}
+		return order;
+	}
+	public String getOrder() {
+		if(order != null) {
+			return order.toString();	
+		}else {
+			return "";
+		}
+	}
+	public GroupTpl<E> groupBy(){
+		if(group == null) {
+			group = new GroupTpl<E>(tplClass);
+		}
+		return group;
 	}
 	public String group() {
-		// TODO Auto-generated method stub
-		return null;
+		if(group != null) {
+			return group.getGroup();
+		}else {
+			return null;
+		}
+		
 	}
 }
 
