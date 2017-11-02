@@ -9,7 +9,9 @@ import org.assertj.core.internal.cglib.proxy.Enhancer;
 import org.assertj.core.internal.cglib.proxy.MethodInterceptor;
 import org.assertj.core.internal.cglib.proxy.MethodProxy;
 
-public class OrderTpl<E>{
+public class OrderTpl<E> extends Tpl {
+	public static final Object ORDER_BY_ASC = null;
+	public static final Object ORDER_BY_DESC = new Object();
 	public static final byte ORDER_BY_ASC_B = 'A';
 	public static final byte ORDER_BY_DESC_B = 'D';
 	public static final char ORDER_BY_ASC_C = 'A';
@@ -54,7 +56,8 @@ public class OrderTpl<E>{
 	            if(method.getName().length() > 3) {
 	            	String fieldName = method.getName().substring(3,4).toLowerCase() +method.getName().substring(4);
 		            Object arg = args[0];
-		            if(arg.equals(OrderTpl.ORDER_BY_DESC_B) 
+		            if(arg != null &&(arg.equals(ORDER_BY_DESC)
+		            		|| arg.equals(OrderTpl.ORDER_BY_DESC_B) 
 		            		|| arg.equals(OrderTpl.ORDER_BY_DESC_C)
 		            		|| arg.equals(OrderTpl.ORDER_BY_DESC_INT)
 		            		|| arg.equals(OrderTpl.ORDER_BY_DESC_LONG)
@@ -62,7 +65,7 @@ public class OrderTpl<E>{
 		            		|| arg.equals(OrderTpl.ORDER_BY_DESC_DOUBLE)
 		            		|| arg.equals(OrderTpl.ORDER_BY_DESC_FLOAT)
 		            		|| arg.equals(OrderTpl.ORDER_BY_DESC_DECIMAL)
-		            		) {
+		            		)) {
 		            	order.add(fieldName + " DESC");
 		            }else {
 		            	order.add(fieldName);
