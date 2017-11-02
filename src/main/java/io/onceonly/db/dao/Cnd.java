@@ -7,19 +7,15 @@ import java.util.List;
 import io.onceonly.db.dao.tpl.GroupTpl;
 import io.onceonly.db.dao.tpl.HavingTpl;
 import io.onceonly.db.dao.tpl.OrderTpl;
+import io.onceonly.db.dao.tpl.SqlLogic;
+import io.onceonly.db.dao.tpl.SqlOpt;
 import io.onceonly.util.OOLog;
 import io.onceonly.util.OOUtils;
 import io.onceonly.util.Tuple2;
 import io.onceonly.util.Tuple3;
 
 public class Cnd<E> {
-	private static enum SqlLogic {
-		AND, OR, NOT,
-	}
 
-	private static enum SqlOpt {
-		EQ, NE, GT, GE, LT, LE, IS_NULL,NOT_NULL,IN, LIKE, PATTERN,
-	}
 	private Integer page;
 	private Integer pageSize;
 	private List<Tuple2<SqlLogic,Cnd<E>>> cnds = new ArrayList<>();

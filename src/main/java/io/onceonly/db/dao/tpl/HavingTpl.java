@@ -24,10 +24,11 @@ public class HavingTpl<E> extends Tpl{
 	public static final long AVG_DECIMAL = 3;
 	public static final long AVG_LONG = 3;
 	public static final long AVG_INT = 3;
-	
+	private String func="";
 	private String havingExp;
-	
 	private List<Object> args = new ArrayList<>();
+	private SqlOpt opt;
+	private List<SqlOpt> opts = new ArrayList<>();
 	private E tpl;
 	
 	public HavingTpl(Class<E> tplClass) {
@@ -38,20 +39,55 @@ public class HavingTpl<E> extends Tpl{
         tpl = (E)enhancer.create(); 
 	}
 	
-	public E count() {
+	public E eq() {
 		return tpl;
 	}
-	public E min() {
+	public E ne() {
 		return tpl;
 	}
-	public E max() {
+	public E lt() {
 		return tpl;
 	}
-	public E sum() {
+	public E le() {
 		return tpl;
 	}
-	public E avg() {
+	public E gt() {
 		return tpl;
+	}
+	public E ge() {
+		return tpl;
+	}
+	
+
+	public HavingTpl<E> count() {
+		func= "COUNT";
+		return this;
+	}
+	public HavingTpl<E> max() {
+		func= "MAX";
+		return this;
+	}
+	public HavingTpl<E> min() {
+		func= "MIN";
+		return this;
+	}
+	public HavingTpl<E> sum() {
+		func= "SUM";
+		return this;
+	}
+	public HavingTpl<E> avg() {
+		func= "AVG";
+		return this;
+	}
+	public HavingTpl<E> and() {
+		return this;
+	}
+	
+	public HavingTpl<E> or() {
+		return this;
+	}
+	public HavingTpl<E> not() {
+		return this;
 	}
 	
 	public HavingTpl<E> args(Object... args) {
@@ -65,6 +101,7 @@ public class HavingTpl<E> extends Tpl{
 	            if(method.getName().length() > 3) {
 	            	String fieldName = method.getName().substring(3,4).toLowerCase() +method.getName().substring(4);
 		            Object arg = args[0];
+		            String.format("%s(%s) %s ?", func,fieldName,opt);
 		            if(arg != null && (arg.equals(SelectTpl.DISTINCT_BYTE) 
 		            		|| arg.equals(SelectTpl.DISTINCT_INT)
 		            		)) {
