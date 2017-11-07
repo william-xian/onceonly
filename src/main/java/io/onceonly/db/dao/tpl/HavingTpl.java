@@ -3,6 +3,17 @@ package io.onceonly.db.dao.tpl;
 import java.util.ArrayList;
 import java.util.List;
 
+import io.onceonly.util.OOLog;
+
+
+
+/**  
+ * @author xian
+ * @param <E>
+ * 
+ * 
+ * 
+ */
 public class HavingTpl<E> extends FuncTpl<E>{
 	private List<Object> args = new ArrayList<>();
 	private List<SqlOpt> opts = new ArrayList<>();
@@ -77,6 +88,58 @@ public class HavingTpl<E> extends FuncTpl<E>{
 	}
 	
 	public String sql() {
-		return null;
+		StringBuffer sb = new StringBuffer();
+		for(int i = 0; i < funcs.size(); i++) {
+			String func = funcs.get(i);
+			String argName = argNames.get(i);
+			SqlOpt opt = opts.get(i);
+			String logic = "";
+			if(i < logics.size()) {
+				logic = logics.get(i).name();
+			}
+			String strOpt = null;
+			switch(opt) {
+			case EQ:
+				strOpt = "=";
+				break;
+			case GT:
+				strOpt = ">";
+				break;
+			case GE:
+				strOpt = ">=";
+				break;
+			case LT:
+				strOpt = "<";
+				break;
+			case LE:
+				strOpt = "<=";
+				break;
+			case LIKE:
+				strOpt = "like";
+				break;
+			case PATTERN:
+				strOpt = "~*";
+				break;
+			case IN:
+				strOpt = "in";
+				break;
+				default:
+			}
+			if(strOpt != null) {
+				sb.append(String.format("%s(%s) %s ? %s"	, func,argName,strOpt,logic));
+			}else {
+				OOLog.warnning("%s", opt.name());
+			}
+		}
+		for(int i = 0; i < extTpls.size(); i++) {
+			SqlLogic extLogic = extLogics.get(i);
+			String extSql = extTpls.get(i).sql();
+			if(!extSql.equals("")) {
+				sb.append(String.format("%s (%s)", extLogic.name(),extTpls.get(i).sql()));	
+			}else {
+				OOLog.warnning("the sql of having's %s is empty", extLogic.name());
+			}
+		}
+		return sb.toString();
 	}	
 }
