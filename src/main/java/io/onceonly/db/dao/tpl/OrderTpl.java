@@ -28,9 +28,8 @@ public class OrderTpl<E> extends Tpl {
 	public static final float ORDER_BY_DESC_FLOAT = 1f;
 	public static final BigDecimal ORDER_BY_ASC_DECIMAL = new BigDecimal(0);
 	public static final BigDecimal ORDER_BY_DESC_DECIMAL = new BigDecimal(1);
-	
 	private List<String> order = new ArrayList<>();
-	
+	private String orderMethod = "ASC";
 	private E tpl;
 	
 	@SuppressWarnings("unchecked")
@@ -42,10 +41,14 @@ public class OrderTpl<E> extends Tpl {
         tpl = (E)enhancer.create(); 
 	}
 
-	public E tpl() {
+	public E desc() {
+		orderMethod = "DESC";
 		return tpl;
 	}
-	
+	public E asc() {
+		orderMethod = "ASC";
+		return tpl;
+	}
 	public String getOrder() {
 		return String.join(",", order);
 	}
@@ -54,22 +57,8 @@ public class OrderTpl<E> extends Tpl {
 	    public Object intercept(Object o, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {
 	        if(method.getName().startsWith("set") && args.length == 1) {
 	            if(method.getName().length() > 3) {
-	            	String fieldName = method.getName().substring(3,4).toLowerCase() +method.getName().substring(4);
-		            Object arg = args[0];
-		            if(arg != null &&(arg.equals(ORDER_BY_DESC)
-		            		|| arg.equals(OrderTpl.ORDER_BY_DESC_B) 
-		            		|| arg.equals(OrderTpl.ORDER_BY_DESC_C)
-		            		|| arg.equals(OrderTpl.ORDER_BY_DESC_INT)
-		            		|| arg.equals(OrderTpl.ORDER_BY_DESC_LONG)
-		            		|| arg.equals(OrderTpl.ORDER_BY_DESC_S)
-		            		|| arg.equals(OrderTpl.ORDER_BY_DESC_DOUBLE)
-		            		|| arg.equals(OrderTpl.ORDER_BY_DESC_FLOAT)
-		            		|| arg.equals(OrderTpl.ORDER_BY_DESC_DECIMAL)
-		            		)) {
-		            	order.add(fieldName + " DESC");
-		            }else {
-		            	order.add(fieldName);
-		            }
+	            	String fieldName = method.getName().substring(3,4).toLowerCase() +method.getName().substring(4);   
+	            	order.add(fieldName + " " + orderMethod);
 	            }
 	        }
 	        return o;  
