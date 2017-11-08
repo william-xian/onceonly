@@ -21,6 +21,7 @@ import io.onceonly.OOConfig;
 import io.onceonly.db.dao.Cnd;
 import io.onceonly.db.dao.IdGenerator;
 import io.onceonly.db.dao.Page;
+import io.onceonly.db.dao.tpl.SelectTpl;
 import io.onceonly.db.dao.tpl.UpdateTpl;
 import io.onceonly.db.meta.ColumnMeta;
 import io.onceonly.db.meta.DDMeta;
@@ -38,8 +39,6 @@ public class DaoHelper {
 	@SuppressWarnings("rawtypes")
 	private Map<String,RowMapper> tableToRowMapper = new HashMap<>();
 	private Map<String,DDMeta> tableToDDMata;
-	private TemplateAdapterImpl adapter;
-	
 	public DaoHelper(){
 	}
 	
@@ -51,7 +50,6 @@ public class DaoHelper {
 		this.jdbcTemplate = jdbcTemplate;
 		this.idGenerator = idGenerator;
 		this.tableToTableMeta = tableToTableMeta;
-		this.adapter = new TemplateAdapterImpl(this.tableToTableMeta);
 	}
 
 	public IdGenerator getIdGenerator() {
@@ -76,7 +74,6 @@ public class DaoHelper {
 
 	public void setTableToTableMata(Map<String, TableMeta> tableToTableMeta) {
 		this.tableToTableMeta = tableToTableMeta;
-		this.adapter = new TemplateAdapterImpl(this.tableToTableMeta);
 	}
 
 	@SuppressWarnings("rawtypes")
@@ -283,32 +280,31 @@ public class DaoHelper {
 		return update(entity,true);	
 	}
 	
-	public <E extends OOEntity<?>> int updateByTmpl(Class<E> tbl,E entity, UpdateTpl<E> tpl) {
-		OOAssert.warnning(entity != null && tpl != null,"Are you sure to update a null value?");
+	public <E extends OOEntity<?>> int updateByTmpl(Class<E> tbl, UpdateTpl<E> tpl) {
+		OOAssert.warnning(tpl.getId() != null && tpl != null,"Are you sure to update a null value?");
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
-		Tuple2<String,List<Object>> tuple = UpdateTpl.getSettings(tm, entity, tpl);
-		List<Object> vals = new ArrayList<>();
-		vals.addAll(tuple.b);
-		vals.add(entity.getId());
-		String sql = String.format("UPDATE %s SET %s WHERE id=? and rm=false;", tm.getTable(),tuple.a);
+		String setTpl = tpl.getSetTpl();
+		List<Object> vals = new ArrayList<>(tpl.getArgs().size()+1);
+		vals.addAll(tpl.getArgs());
+		vals.add(tpl.getId());
+		String sql = String.format("UPDATE %s SET %s WHERE id=? and rm=false;", tm.getTable(),setTpl);
 		return jdbcTemplate.update(sql, vals.toArray());
 	}
 	
-	public <E extends OOEntity<?>> int updateByTmplCnd(Class<E> tbl,E entity, UpdateTpl<E> tpl,Cnd<E> cnd) {
-		OOAssert.warnning(entity != null && tpl != null,"Are you sure to update a null value?");
+	public <E extends OOEntity<?>> int updateByTmplCnd(Class<E> tbl,UpdateTpl<E> tpl,Cnd<E> cnd) {
+		OOAssert.warnning(tpl != null,"Are you sure to update a null value?");
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
-		Tuple2<String,List<Object>> tuple = UpdateTpl.getSettings(tm, entity, tpl);
 		List<Object> vals = new ArrayList<>();
-		vals.addAll(tuple.b);
+		vals.addAll(tpl.getArgs());
 		List<Object> sqlArgs = new ArrayList<>();
-		String cndSql = Cnd.sql(cnd, sqlArgs, adapter);
+		String cndSql = cnd.sql(sqlArgs);
 		if(cndSql.isEmpty()) {
 			OOAssert.warnning("查询条件不能为空");
 		}
 		vals.addAll(sqlArgs);
-		String sql = String.format("UPDATE %s SET %s WHERE (%s) and rm=false;", tm.getTable(),tuple.a,cndSql);
+		String sql = String.format("UPDATE %s SET %s WHERE (%s) and rm=false;", tm.getTable(),tpl.getSetTpl(),cndSql);
 		return jdbcTemplate.update(sql, vals.toArray());
 	}
 
@@ -332,7 +328,7 @@ public class DaoHelper {
 		if(cnd == null) return 0;
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		List<Object> sqlArgs = new ArrayList<>();
-		String whereCnd = Cnd.sql(cnd, sqlArgs, adapter);
+		String whereCnd = cnd.sql(sqlArgs);
 		if(whereCnd.equals("")) {
 			return 0;
 		}
@@ -357,7 +353,7 @@ public class DaoHelper {
 		if (cnd == null) return 0;
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		List<Object> sqlArgs = new ArrayList<>();
-		String whereCnd = Cnd.sql(cnd, sqlArgs, adapter);
+		String whereCnd = cnd.sql(sqlArgs);
 		if (whereCnd.equals("")) {
 			return 0;
 		}
@@ -376,7 +372,7 @@ public class DaoHelper {
 		if (cnd == null) return 0;
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		List<Object> sqlArgs = new ArrayList<>();
-		String whereCnd = Cnd.sql(cnd, sqlArgs, adapter);
+		String whereCnd = cnd.sql(sqlArgs);
 		
 		String sql = String.format("SELECT COUNT(1) FROM %s WHERE %s;", tm.getTable(), whereCnd);
 		if (whereCnd.equals("")) {
@@ -389,10 +385,10 @@ public class DaoHelper {
 		return find(tbl,null,cnd);
 	}
 	@SuppressWarnings("unchecked")
-	public <E extends OOEntity<?>> Page<E> find(Class<E> tbl,E tmpl,Cnd<E> cnd) {
+	public <E extends OOEntity<?>> Page<E> find(Class<E> tbl,SelectTpl<E> tpl,Cnd<E> cnd) {
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
-		Tuple2<String,Object[]> sqlAndArgs = queryFieldCnd(tm,tmpl,cnd);
+		Tuple2<String,Object[]> sqlAndArgs = queryFieldCnd(tm,tpl,cnd);
 		RowMapper<E> rowMapper = null;
 		if(!tableToRowMapper.containsKey(tbl.getSimpleName())) {
 			rowMapper = genRowMapper(tbl,tm);
@@ -435,12 +431,11 @@ public class DaoHelper {
 		return page;
 	}
 
-	private <E extends OOEntity<?>> Tuple2<String,Object[]> queryFieldCnd(TableMeta tm,E tmpl,Cnd<E> cnd) {
+	private <E extends OOEntity<?>> Tuple2<String,Object[]> queryFieldCnd(TableMeta tm,SelectTpl<E> tpl,Cnd<E> cnd) {
 		StringBuffer sqlSelect = new StringBuffer("SELECT");
-		if(tmpl != null) {
-			Tuple2<String[], Object[]> nameVals = adapter.adapterForSelect(tmpl);
-			if(nameVals != null && nameVals.a.length > 0) {
-				sqlSelect.append(" " + String.join(",", nameVals.a));		
+		if(tpl != null) {
+			if(tpl.sql() != null && !tpl.sql().isEmpty()) {
+				sqlSelect.append(" " + tpl.sql());		
 			}else {
 				sqlSelect.append(" *");		
 			}
@@ -448,13 +443,13 @@ public class DaoHelper {
 			sqlSelect.append(" *");
 		}
 		List<Object> sqlArgs = new ArrayList<>();
-		String whereCnd = Cnd.sql(cnd, sqlArgs, adapter);
+		String whereCnd = cnd.sql(sqlArgs);
 		if (whereCnd.equals("")) {
 			sqlSelect.append(String.format(" FROM %s", tm.getTable()));
 		} else {
 			sqlSelect.append(String.format(" FROM %s WHERE (%s)", tm.getTable(), whereCnd));
 		}
-		String having = cnd.having();
+		String having = cnd.getHaving();
 		if(having != null && !having.isEmpty()) {
 			sqlSelect.append(String.format(" HAVING %s", having));
 		}
@@ -466,12 +461,12 @@ public class DaoHelper {
 		return new Tuple2<String,Object[]>(sqlSelect.toString(),sqlArgs.toArray(new Object[0]));
 	}
 	
-	public <E extends OOEntity<?>> void download(Class<E> tbl,E tmpl,Cnd<E> cnd, Consumer<E> consumer) {
+	public <E extends OOEntity<?>> void download(Class<E> tbl,SelectTpl<E> tpl,Cnd<E> cnd, Consumer<E> consumer) {
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		if(tm == null) {
 			return ;
 		}
-		Tuple2<String,Object[]> sqlAndArgs = queryFieldCnd(tm,tmpl,cnd);
+		Tuple2<String,Object[]> sqlAndArgs = queryFieldCnd(tm,tpl,cnd);
 		jdbcTemplate.query(sqlAndArgs.a, sqlAndArgs.b, new RowCallbackHandler() {
 			@Override
 			public void processRow(ResultSet rs) throws SQLException {

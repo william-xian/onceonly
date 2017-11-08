@@ -1,33 +1,45 @@
 package io.onceonly.db.dao;
 
+import java.lang.reflect.Method;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
+
+import org.assertj.core.internal.cglib.proxy.Enhancer;
+import org.assertj.core.internal.cglib.proxy.MethodInterceptor;
+import org.assertj.core.internal.cglib.proxy.MethodProxy;
 
 import io.onceonly.db.dao.tpl.GroupTpl;
 import io.onceonly.db.dao.tpl.HavingTpl;
 import io.onceonly.db.dao.tpl.OrderTpl;
 import io.onceonly.db.dao.tpl.SqlLogic;
-import io.onceonly.db.dao.tpl.SqlOpt;
+import io.onceonly.db.dao.tpl.Tpl;
 import io.onceonly.util.OOLog;
 import io.onceonly.util.OOUtils;
-import io.onceonly.util.Tuple2;
-import io.onceonly.util.Tuple3;
 
-public class Cnd<E> {
-
+public class Cnd<E> extends Tpl{
 	private Integer page;
 	private Integer pageSize;
-	private List<Tuple2<SqlLogic,Cnd<E>>> cnds = new ArrayList<>();
-	private List<Tuple3<SqlOpt,E,Object[]>> opts = new ArrayList<>();
-	private List<SqlLogic> optsLogic = new ArrayList<>();
-	
-	private List<HavingTpl<E>> having;
-	private OrderTpl<E> order;
+	private HavingTpl<E> having;
 	private GroupTpl<E> group;
+	private OrderTpl<E> order;
+	private List<Object> args = new ArrayList<>();
+	private String opt = null;
+	private Object[] inVals;
+	private SqlLogic logic = null;
+	private List<SqlLogic> extLogics = new ArrayList<>();
+	private List<Cnd<E>> extCnds = new ArrayList<>();
+	private StringBuffer selfSql = new StringBuffer();
 	private Class<E> tplClass;
+	private E tpl;
+	
+	@SuppressWarnings("unchecked")
 	public Cnd(Class<E> tplClass) {
 		this.tplClass = tplClass;
+		CndSetterProxy cglibProxy = new CndSetterProxy();
+        Enhancer enhancer = new Enhancer();  
+        enhancer.setSuperclass(tplClass);  
+        enhancer.setCallback(cglibProxy);  
+        tpl = (E)enhancer.create(); 
 	}
 	public Integer getPageSize() {
 		return pageSize;
@@ -42,166 +54,103 @@ public class Cnd<E> {
 	public Integer getPage() {
 		return page;
 	}
-	public Cnd<E> eq(E e) {
-		opts.add(new Tuple3<SqlOpt, E,Object[]>(SqlOpt.EQ,e,null));
-		return this;
+
+	public E eq() {
+		opt = "=";
+		return tpl;
 	}
-	public Cnd<E> ne(E e) {
-		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.NE,e,null));
-		return this;
+	public E ne() {
+		opt = "!=";
+		return tpl;
 	}
-	public Cnd<E> ge(E e) {
-		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.GE,e,null));
-		return this;
+	public E lt() {
+		opt = "<";
+		return tpl;
 	}
-	public Cnd<E> lt(E e) {
-		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.LT,e,null));
-		return this;
+	public E le() {
+		opt = "<=";
+		return tpl;
 	}
-	public Cnd<E> le(E e) {
-		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.LE,e,null));
-		return this;
+	public E gt() {
+		opt = ">";
+		return tpl;
 	}
-	public Cnd<E> is_null(E e) {
-		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.IS_NULL,e,null));
-		return this;
+	public E ge() {
+		opt = ">=";
+		return tpl;
 	}
-	public Cnd<E> not_null(E e) {
-		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.NOT_NULL,e,null));
-		return this;
+
+	public E is_null() {
+		opt = "IS NULL";
+		return tpl;
+	}
+	public E not_null(E e) {
+		opt = "IS NOT NULL";
+		return tpl;
 	}
 	/**
 	 * 对于需要查找null值字段，传递vals为null值，
 	 */
-	public Cnd<E> in(E tmpl,Object[] vals) {
-		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.IN,tmpl,vals));
-		return this;
+	public E in(Object[] vals) {
+		opt = "IN";
+		inVals = vals;
+		return tpl;
 	}
-	public Cnd<E> like(E tmpl) {
-		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.LIKE,tmpl,null));
-		return this;
+	public E like() {
+		opt = "LIKE";
+		return tpl;
 	}
-	public Cnd<E> pattern(E tmpl) {
-		opts.add(new Tuple3<SqlOpt,E,Object[]>(SqlOpt.PATTERN,tmpl,null));
-		return this;
+	public E pattern() {
+		opt = "~*";
+		return tpl;
 	}
-	
 	public Cnd<E> and() {
-		optsLogic.add(SqlLogic.AND);
+		if(opt != null) {
+			logic = SqlLogic.AND;	
+		}
 		return this;
 	}
 	public Cnd<E> or() {
-		optsLogic.add(SqlLogic.OR);
+		if(opt != null) {
+			logic = SqlLogic.OR;	
+		}
 		return this;
 	}
 	public Cnd<E> not() {
-		optsLogic.add(SqlLogic.NOT);
+		if(opt != null) {
+			logic = SqlLogic.NOT;	
+		}
 		return this;
 	}
-	public Cnd<E> and(Cnd<E> cnd) {
-		cnds.add(new Tuple2<SqlLogic,Cnd<E>>(SqlLogic.AND,cnd));
+
+	public Cnd<E> and(Cnd<E> extCnd) {
+		extLogics.add(SqlLogic.AND);
+		extCnds.add(extCnd);
 		return this;
 	}
-	public Cnd<E> or(Cnd<E> cnd) {
-		cnds.add(new Tuple2<SqlLogic,Cnd<E>>(SqlLogic.OR,cnd));
+	public Cnd<E> or(Cnd<E> extCnd) {
+		extLogics.add(SqlLogic.OR);
+		extCnds.add(extCnd);
 		return this;
 	}
-	public Cnd<E> not(Cnd<E> cnd) {
-		cnds.add(new Tuple2<SqlLogic,Cnd<E>>(SqlLogic.NOT,cnd));
+	public Cnd<E> not(Cnd<E> extCnd) {
+		extLogics.add(SqlLogic.NOT);
+		extCnds.add(extCnd);
 		return this;
 	}
 	
-	public static <E> String sql(Cnd<E> cnd,List<Object> sqlArgs,TemplateAdapter adapter){
-		StringBuffer self = new StringBuffer("(");
-		for(int i = 0; i < cnd.opts.size(); i++ ) {
-			Tuple3<SqlOpt,E,Object[]> opt = cnd.opts.get(i);
-			String nextLogic = "";
-			if(i < cnd.optsLogic.size()) {
-				SqlLogic nl = cnd.optsLogic.get(i);
-				switch(nl) {
-				case AND:
-					nextLogic = " AND";
-					break;
-				case OR:
-					nextLogic = " OR";
-					break;
-				case NOT:
-					nextLogic = " AND NOT";
-					break;
-					default:
-						nextLogic = "";
-				}
-			}
-			Tuple2<String[],Object[]> tpl = adapter.adapterForWhere(opt.b);
-			if(tpl == null || tpl.a.length ==0) continue;
-			switch(opt.a) {
-			case EQ:
-				self.append(String.format("(%s=?) %s ", String.join("=? AND", tpl.a),nextLogic));
-				sqlArgs.addAll(Arrays.asList(tpl.b));
-				break;
-			case NE:
-				self.append(String.format("(%s!=?) %s ", String.join("!=? AND", tpl.a),nextLogic));
-				sqlArgs.addAll(Arrays.asList(tpl.b));
-				break;
-			case LT:
-				self.append(String.format("(%s<?) %s", String.join("=? AND", tpl.a),nextLogic));
-				sqlArgs.addAll(Arrays.asList(tpl.b));
-				break;
-			case LE:
-				self.append(String.format("(%s<=?) %s", String.join("=? AND", tpl.a),nextLogic));
-				sqlArgs.addAll(Arrays.asList(tpl.b));
-				break;
-			case GT:
-				self.append(String.format("(%s>?) %s", String.join("=? AND", tpl.a),nextLogic));
-				sqlArgs.addAll(Arrays.asList(tpl.b));
-				break;
-			case GE:
-				self.append(String.format("(%s>=?) %s", String.join("=? AND", tpl.a),nextLogic));
-				sqlArgs.addAll(Arrays.asList(tpl.b));
-				break;
-			case IS_NULL:
-				self.append(String.format("(%s IS NULL) %s", String.join(" IS NULL AND", tpl.a),nextLogic));
-				break;
-			case NOT_NULL:
-				self.append(String.format("(%s NOT NULL) %s", String.join(" NOT NULL AND", tpl.a),nextLogic));
-				break;
-			case IN:
-				if(opt.c != null) {
-					List<Object> inArgs = Arrays.asList(opt.c);
-					if(!inArgs.isEmpty()){
-						String stub = OOUtils.genStub("?", ",", inArgs.size());
-						for(String f:tpl.a) {
-							self.append(String.format(" %s IN (%s) %s",f, stub,nextLogic));
-							sqlArgs.addAll(inArgs);
-						}	
-					}else {
-						OOLog.warnning("条件查询  in 全部为null值");
-					}
-				} else {
-					OOLog.warnning("条件查询  in 全部为null值");
-				}
-				break;
-			case LIKE:
-				self.append(String.format("(%s LIKE ?) %s", String.join(" LIKE ? AND", tpl.a),nextLogic));
-				sqlArgs.addAll(Arrays.asList(tpl.b));
-				break;
-			case PATTERN:
-				self.append(String.format("(%s ~* ?) %s", String.join(" ~* ? AND", tpl.a),nextLogic));
-				sqlArgs.addAll(Arrays.asList(tpl.b));
-				break;
-			default:
-			}
+	public String sql(List<Object> sqlArgs){
+		StringBuffer self = new StringBuffer();
+		if(selfSql.length() > 0) {
+			self.append("("+selfSql+")");
 		}
-		if(self.length() > 1) {
-			self.delete(self.length()-1, self.length());
-			self.append(')');
-		}else {
-			self.delete(0, 1);
-		}
-		for(Tuple2<SqlLogic, Cnd<E>> c:cnd.cnds){
-			String other = sql(c.b,sqlArgs,adapter);
+		sqlArgs.addAll(args);
+		for(int i =0; i < this.extLogics.size(); i++) {
+			SqlLogic sl = this.extLogics.get(i);
+			Cnd<E> c = extCnds.get(i);
+			String other = c.sql(sqlArgs);
 			if(!other.equals("")){
-				switch(c.a) {
+				switch(sl) {
 				case AND:
 					if(self.length() > 0) self.append(" AND");
 					self.append(other);
@@ -223,16 +172,23 @@ public class Cnd<E> {
 			}else {
 				OOLog.warnning("查询条件是空的");
 			}
-			
 		}
 		return self.toString();
 	}
 	
-	public String having() {
-		// TODO Auto-generated method stub
-		return null;
+	public HavingTpl<E> having() {
+		if(having == null) {
+			having = new HavingTpl<E>(tplClass);
+		}
+		return having;
 	}
-	
+	public String getHaving() {
+		if(having!=null) {
+			return having.sql();
+		}else {
+			return null;
+		}
+	}
 	public OrderTpl<E> orderBy() {
 		if(order == null) {
 			order = new OrderTpl<E>(tplClass);
@@ -258,7 +214,34 @@ public class Cnd<E> {
 		}else {
 			return null;
 		}
-		
 	}
+	
+	class CndSetterProxy implements MethodInterceptor {  
+	    @Override  
+	    public Object intercept(Object o, Method method, Object[] argsx, MethodProxy methodProxy) throws Throwable {
+	        if(method.getName().startsWith("set") && argsx.length == 1) {
+	            if(method.getName().length() > 3) {
+	            	String fieldName = method.getName().substring(3,4).toLowerCase() +method.getName().substring(4);
+	            	args.add(argsx[0]);
+	            	String strLogic = "";
+	            	if(logic != null) {
+	            		strLogic = logic.toString() +" ";
+	            	}
+	            	if(opt.equals("IN")&& inVals!=null && inVals.length>1) {
+	            		String stub = OOUtils.genStub("?", ",", inVals.length);
+	            		selfSql.append(String.format("%s%s %s (%s)", strLogic,fieldName,opt, stub));
+	            	}else if(opt.equals("IS NULL")){
+	            		selfSql.append(String.format("%s%s IS NULL", strLogic,fieldName));
+	            	}else if(opt.equals("IS NOT NULL")){
+	            		selfSql.append(String.format("%s%s IS NOT NULL",strLogic, fieldName));
+	            	}else {
+	            		selfSql.append(String.format("%s%s %s ?", strLogic, fieldName,opt));
+	            	}
+	            }
+	        }
+	        return o;  
+	    }  
+	}
+	
 }
 

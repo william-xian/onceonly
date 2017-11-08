@@ -115,8 +115,8 @@ public class DaoHelperTest extends DaoBaseTest{
 		daoHelper.remove(UserChief.class, ids);
 		daoHelper.delete(UserChief.class, ids);
 	}
-	
-	public void updateByTempl() {
+	//@Test
+	public void updateByTpl() {
 		List<UserChief> ucs = new ArrayList<>();
 		List<Long> ids = new ArrayList<>();
 		for(int i = 0; i < 3; i++) {
@@ -132,13 +132,11 @@ public class DaoHelperTest extends DaoBaseTest{
 		daoHelper.insert(ucs);
 		UserChief uc1 = ucs.get(0);
 		UserChief uc2 = ucs.get(1);
-		UserChief arg = new UserChief();
-		arg.setId(uc1.getId());
-		arg.setGenre(1);
 		UpdateTpl<UserChief> tpl = new UpdateTpl<>(UserChief.class);
-		tpl.getVal().setGenre(UpdateTpl.U_ADD);
-		daoHelper.updateByTmpl(UserChief.class,arg,tpl);
-		UserChief db1 = daoHelper.get(UserChief.class, arg.getId());
+		tpl.setId(uc1.getId());
+		tpl.add().setGenre(1);
+		daoHelper.updateByTmpl(UserChief.class,tpl);
+		UserChief db1 = daoHelper.get(UserChief.class, tpl.getId());
 		Assert.assertEquals(1,db1.getGenre().intValue());
 		UserChief db2 = daoHelper.get(UserChief.class, uc2.getId());
 		uc2.setRm(false);
@@ -162,16 +160,11 @@ public class DaoHelperTest extends DaoBaseTest{
 			ids.add(uc.getId());
 		}
 		daoHelper.insert(ucs);
-		UserChief e1 = new UserChief();
-		e1.setGenre(2);
-		UserChief e2 = new UserChief();
-		e2.setGenre(3);
 		Cnd<UserChief> cnd1 = new Cnd<>(UserChief.class);
-		cnd1.eq(e1).or().ne(e2);
-		UserChief e3 = new UserChief();
+		cnd1.eq().setGenre(2);
+		cnd1.or().ne().setGenre(3);
 		Cnd<UserChief> cnd3 = new Cnd<>(UserChief.class);
-		e3.setAvatar("avatar%00");
-		cnd3.like(e3);
+		cnd3.like().setAvatar("avatar%00");
 		Assert.assertEquals(2, daoHelper.count(UserChief.class, cnd3));
 		Cnd<UserChief> cnd4 = new Cnd<>(UserChief.class);
 		/** (genre=2 or genre != 3) and not (avatar like 'avatar%00')*/
