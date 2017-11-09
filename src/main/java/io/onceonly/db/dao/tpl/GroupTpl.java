@@ -23,7 +23,7 @@ public class GroupTpl<E> extends Tpl {
         tpl = (E)enhancer.create(); 
 	}
 
-	public E tpl() {
+	public E use() {
 		return tpl;
 	}
 	

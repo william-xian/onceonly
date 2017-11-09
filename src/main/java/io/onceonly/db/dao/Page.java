@@ -2,6 +2,8 @@ package io.onceonly.db.dao;
 
 import java.util.List;
 
+import io.onceonly.util.OOUtils;
+
 /**
  * 当page非正数时，会返回total; 当page为null或者0时，返回第一页数据 ，当page为负数时，返回第page的绝对值也页。
  **/
@@ -34,4 +36,9 @@ public class Page<T> {
 	public void setData(List<T> data) {
 		this.data = data;
 	}
+	@Override
+	public String toString() {
+		return OOUtils.toJSON(this);
+	}
+	
 }

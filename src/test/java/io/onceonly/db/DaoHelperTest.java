@@ -11,6 +11,9 @@ import org.junit.Test;
 import cn.mx.app.entity.UserChief;
 import io.onceonly.db.dao.Cnd;
 import io.onceonly.db.dao.Page;
+import io.onceonly.db.dao.tpl.GroupTpl;
+import io.onceonly.db.dao.tpl.SelectTpl;
+import io.onceonly.db.dao.tpl.Tpl;
 import io.onceonly.db.dao.tpl.UpdateTpl;
 import io.onceonly.util.IDGenerator;
 import io.onceonly.util.OOUtils;
@@ -145,7 +148,7 @@ public class DaoHelperTest extends DaoBaseTest{
 		daoHelper.delete(UserChief.class, ids);
 	}
 	
-	@Test
+	//@Test
 	public void find() {
 		List<UserChief> ucs = new ArrayList<>();
 		List<Long> ids = new ArrayList<>();
@@ -178,5 +181,31 @@ public class DaoHelperTest extends DaoBaseTest{
 		daoHelper.remove(UserChief.class, ids);
 		daoHelper.delete(UserChief.class, ids);
 		
+	}
+	
+	@Test
+	public void having_group_orderby() {
+		List<UserChief> ucs = new ArrayList<>();
+		List<Long> ids = new ArrayList<>();
+		for (int i = 0; i < 10; i++) {
+			UserChief uc = new UserChief();
+			uc.setId(IDGenerator.randomID());
+			uc.setName("name" + i + "-" + System.currentTimeMillis());
+			uc.setGenre(i % 4);
+			uc.setAvatar(String.format("avatar%d%d", i % 2, i % 3));
+			uc.setPasswd("passwd");
+			ucs.add(uc);
+			ids.add(uc.getId());
+		}
+		daoHelper.insert(ucs);
+		SelectTpl<UserChief> tpl = new SelectTpl<UserChief>(UserChief.class);
+		tpl.distinct().setGenre(SelectTpl.USING_INT);
+		Cnd<UserChief> cnd = new Cnd<UserChief>(UserChief.class);
+		cnd.groupBy().use().setGenre(Tpl.USING_INT);
+		Page<UserChief> list= daoHelper.find(UserChief.class, tpl, cnd);
+		System.out.println(list);
+		
+		daoHelper.remove(UserChief.class, ids);
+		daoHelper.delete(UserChief.class, ids);
 	}
 }

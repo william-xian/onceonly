@@ -2,7 +2,6 @@ package io.onceonly.db.tbl;
 
 import java.util.Map;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 
@@ -17,9 +16,8 @@ public abstract class OOEntity<ID>{
 	@OId
     @Col(nullable = false)
 	protected ID id;
-	@JsonIgnore
     @Col(colDef="boolean default false",nullable = false)
-	protected Boolean rm;
+	protected transient Boolean rm;
 	/** 用户存储额外数据，如 聚合函数 */
 	protected Map<String,Object> extra;
 	

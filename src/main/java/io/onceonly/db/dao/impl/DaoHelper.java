@@ -155,15 +155,21 @@ public class DaoHelper {
 		E row = null;
 		try {
 			row = tbl.newInstance();
+		} catch (InstantiationException | IllegalAccessException e) {
+			OOAssert.warnning("%s InstantiationException", tbl);
+		}
+		if(row != null) {
 			List<ColumnMeta> columnMetas = tm.getColumnMetas();
 			for (ColumnMeta colMeta : columnMetas) {
 				Field field = colMeta.getField();
-				Object val = rs.getObject(colMeta.getName(), colMeta.getJavaBaseType());
-				field.set(row, val);
+				try {
+					Object val = rs.getObject(colMeta.getName(), colMeta.getJavaBaseType());
+					field.set(row, val);
+				} catch (Exception e) {
+					// TODO count rank  distinct
+					e.printStackTrace();
+				}
 			}
-
-		} catch (InstantiationException | IllegalAccessException e) {
-			OOAssert.warnning("%s InstantiationException", tbl);
 		}
 		return row;
 	}
@@ -368,6 +374,7 @@ public class DaoHelper {
 		return jdbcTemplate.queryForObject(sql, Long.class);
 	}
 
+	//TODO distinict
 	public <E extends OOEntity<?>> long count(Class<E> tbl, Cnd<E> cnd) {
 		if (cnd == null) return 0;
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
