@@ -31,7 +31,6 @@ import io.onceonly.db.tbl.OOEntity;
 import io.onceonly.util.OOAssert;
 import io.onceonly.util.OOLog;
 import io.onceonly.util.OOUtils;
-import io.onceonly.util.Tuple2;
 
 public class DaoHelper {
 	private JdbcTemplate jdbcTemplate;
@@ -446,7 +445,6 @@ public class DaoHelper {
 	public <E extends OOEntity<?>> Page<E> find(Class<E> tbl,SelectTpl<E> tpl,Cnd<E> cnd) {
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
-		Tuple2<String,Object[]> sqlAndArgs = queryFieldCnd(tm,tpl,cnd);
 		RowMapper<E> rowMapper = null;
 		String mapperKey = tbl.getSimpleName();
 		if(tpl != null && !tpl.columns().isEmpty()) {
@@ -477,11 +475,10 @@ public class DaoHelper {
 			page.setPageSize(OOConfig.PAGE_SIZE_MAX);
 		}
 		if(page.getTotal() == null || page.getTotal() > 0) {
-			StringBuffer sql = new StringBuffer(sqlAndArgs.a);
+			List<Object> args = new ArrayList<>();
+			StringBuffer sql = queryFieldCnd(tm,tpl,cnd,args);
 			//TODO O1
 			sql.append(" LIMIT ? OFFSET ?");
-			List<Object> args = new ArrayList<>();
-			args.addAll(Arrays.asList(sqlAndArgs.b));
 			args.addAll(Arrays.asList(cnd.getPageSize(),(cnd.getPage()-1)*cnd.getPageSize()));
 			List<E> data = jdbcTemplate.query(sql.toString(),args.toArray(new Object[0]), rowMapper);
 			page.setData(data);
@@ -514,7 +511,7 @@ public class DaoHelper {
 		return afterWhere.toString();
 	}
 	
-	private <E extends OOEntity<?>> Tuple2<String,Object[]> queryFieldCnd(TableMeta tm,SelectTpl<E> tpl,Cnd<E> cnd) {
+	private <E extends OOEntity<?>> StringBuffer queryFieldCnd(TableMeta tm,SelectTpl<E> tpl,Cnd<E> cnd,List<Object> sqlArgs) {
 		StringBuffer sqlSelect = new StringBuffer("SELECT");
 		if(tpl != null) {
 			if(tpl.sql() != null && !tpl.sql().isEmpty()) {
@@ -526,9 +523,8 @@ public class DaoHelper {
 			sqlSelect.append(" *");
 		}
 		sqlSelect.append(String.format(" FROM %s", tm.getTable()));
-		List<Object> sqlArgs = new ArrayList<>();
 		genAfterWhere(sqlArgs,cnd);
-		return new Tuple2<String,Object[]>(sqlSelect.toString(),sqlArgs.toArray(new Object[0]));
+		return sqlSelect;
 	}
 	
 	public <E extends OOEntity<?>> void download(Class<E> tbl,SelectTpl<E> tpl,Cnd<E> cnd, Consumer<E> consumer) {
@@ -536,8 +532,9 @@ public class DaoHelper {
 		if(tm == null) {
 			return ;
 		}
-		Tuple2<String,Object[]> sqlAndArgs = queryFieldCnd(tm,tpl,cnd);
-		jdbcTemplate.query(sqlAndArgs.a, sqlAndArgs.b, new RowCallbackHandler() {
+		List<Object> args = new ArrayList<>();
+		StringBuffer sql = queryFieldCnd(tm,tpl,cnd,args);
+		jdbcTemplate.query(sql.toString(), args.toArray(new Object[0]), new RowCallbackHandler() {
 			@Override
 			public void processRow(ResultSet rs) throws SQLException {
 				E row = createBy(tbl, tm, tpl,rs);
