@@ -30,15 +30,15 @@ public abstract class FuncTpl<E> extends Tpl{
 		return tpl;
 	}
 	public E min() {
-		funcs.add("min");
+		funcs.add("MIN");
 		return tpl;
 	}
 	public E sum() {
-		funcs.add("sum");
+		funcs.add("SUM");
 		return tpl;
 	}
 	public E avg() {
-		funcs.add("avg");
+		funcs.add("AVG");
 		return tpl;
 	}
 	class FuncSetterProxy implements MethodInterceptor {  

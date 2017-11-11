@@ -1,5 +1,6 @@
 package io.onceonly.db.tbl;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import com.google.gson.Gson;
@@ -38,6 +39,12 @@ public abstract class OOEntity<ID>{
 	}
 	public void setRm(Boolean rm) {
 		this.rm = rm;
+	}
+	public Map<String,Object> put(String key,Object val) {
+		if(extra == null) {
+			extra = new HashMap<String,Object>();
+		}
+		return extra;
 	}
 	public Map<String, Object> getExtra() {
 		return extra;

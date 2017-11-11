@@ -11,7 +11,6 @@ import org.junit.Test;
 import cn.mx.app.entity.UserChief;
 import io.onceonly.db.dao.Cnd;
 import io.onceonly.db.dao.Page;
-import io.onceonly.db.dao.tpl.GroupTpl;
 import io.onceonly.db.dao.tpl.SelectTpl;
 import io.onceonly.db.dao.tpl.Tpl;
 import io.onceonly.db.dao.tpl.UpdateTpl;
@@ -39,7 +38,7 @@ public class DaoHelperTest extends DaoBaseTest{
 			uc.setName("name"+i + "-" + System.currentTimeMillis());
 			uc.setGenre(i%4);
 			uc.setAvatar(String.format("avatar%d%d",i%2,i%3));
-			uc.setPasswd("passwd");
+			uc.setPasswd("passwd"+i%3);
 			System.out.println(OOUtils.toJSON(uc));
 			ucs.add(uc);
 			ids.add(uc.getId());
@@ -199,7 +198,7 @@ public class DaoHelperTest extends DaoBaseTest{
 		}
 		daoHelper.insert(ucs);
 		SelectTpl<UserChief> tpl = new SelectTpl<UserChief>(UserChief.class);
-		tpl.distinct().setGenre(SelectTpl.USING_INT);
+		tpl.using().setGenre(SelectTpl.USING_INT);
 		Cnd<UserChief> cnd = new Cnd<UserChief>(UserChief.class);
 		cnd.groupBy().use().setGenre(Tpl.USING_INT);
 		Page<UserChief> list= daoHelper.find(UserChief.class, tpl, cnd);

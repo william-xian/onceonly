@@ -17,3 +17,6 @@
 > 缺点：依赖关系复杂，添加数据必须是正确的。为单体测试带来困难。
 > 结论：单体测试时，全部不使用外键，正常业务数据时，使用外键
 
+##distinct有存在价值吗？
+>group by总是比distinct效率高
+>count时，disctinct可以和count结合，而groupby必须使用子查询,但是groupby速度快

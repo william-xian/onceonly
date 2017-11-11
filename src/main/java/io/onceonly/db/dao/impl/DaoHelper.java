@@ -140,18 +140,18 @@ public class DaoHelper {
 		return jdbcTemplate.batchUpdate(sql, batchArgs);
 	}
 	
-	private static <E extends OOEntity<?>> RowMapper<E> genRowMapper(Class<E> tbl,TableMeta tm) {
+	private static <E extends OOEntity<?>> RowMapper<E> genRowMapper(Class<E> tbl,TableMeta tm,SelectTpl<E> tpl) {
 		RowMapper<E> rowMapper = new RowMapper<E>(){
 			@Override
 			public E mapRow(ResultSet rs, int rowNum) throws SQLException {
-				E row = createBy(tbl,tm,rs);
+				E row = createBy(tbl,tm,tpl,rs);
 				return row;
 			}
 		};
 		return rowMapper;
 	}
 	
-	public static <E extends OOEntity<?>> E createBy(Class<E> tbl,TableMeta tm,ResultSet rs) throws SQLException {
+	public static <E extends OOEntity<?>> E createBy(Class<E> tbl,TableMeta tm,SelectTpl<E> tpl,ResultSet rs) throws SQLException {
 		E row = null;
 		try {
 			row = tbl.newInstance();
@@ -159,15 +159,54 @@ public class DaoHelper {
 			OOAssert.warnning("%s InstantiationException", tbl);
 		}
 		if(row != null) {
-			List<ColumnMeta> columnMetas = tm.getColumnMetas();
-			for (ColumnMeta colMeta : columnMetas) {
-				Field field = colMeta.getField();
-				try {
+			if(tpl == null || tpl.columns().isEmpty()) {
+				List<ColumnMeta> columnMetas = tm.getColumnMetas();
+				for (ColumnMeta colMeta : columnMetas) {
+					Field field = colMeta.getField();
 					Object val = rs.getObject(colMeta.getName(), colMeta.getJavaBaseType());
-					field.set(row, val);
-				} catch (Exception e) {
-					// TODO count rank  distinct
-					e.printStackTrace();
+					try {
+						field.set(row, val);
+					} catch (IllegalArgumentException|IllegalAccessException e) {
+						e.printStackTrace();
+					}
+				}
+			}else {
+				for (String col : tpl.columns()) {
+					ColumnMeta colMeta = tm.getColumnMetaByName(col);
+					if(colMeta != null) {
+						Field field = colMeta.getField();
+						Object val = rs.getObject(colMeta.getName(), colMeta.getJavaBaseType());
+						try {
+							field.set(row, val);
+						} catch (IllegalArgumentException|IllegalAccessException e) {
+							e.printStackTrace();
+						}
+						//TODO orderNum
+					}else if(col.matches("^(count|max|min|avg|sum)_.*")) {
+						int sp = col.indexOf('_');
+						String func = col.substring(0, sp);
+						String colName = col.substring(sp+1);
+						colMeta = tm.getColumnMetaByName(colName);
+						if(colMeta != null) {
+							if(func.equals("count")) {
+								Long count = rs.getObject(colName, Long.class);
+								row.getExtra().put(col, count);
+							}else {
+								Field field = colMeta.getField();
+								Object val = rs.getObject(colName, colMeta.getJavaBaseType());
+								try {
+									field.set(row, val);
+								} catch (IllegalArgumentException|IllegalAccessException e) {
+									e.printStackTrace();
+								}
+							}
+						}else {
+							OOLog.warnning("Unknown field %s", col);
+						}
+					}else {
+						OOLog.warnning("Unknown field %s", col);
+					}
+					
 				}
 			}
 		}
@@ -182,7 +221,7 @@ public class DaoHelper {
 		}
 		RowMapper<E> rowMapper = null;
 		if(!tableToRowMapper.containsKey(tbl.getSimpleName())) {
-			rowMapper = genRowMapper(tbl,tm);
+			rowMapper = genRowMapper(tbl,tm,null);
 			tableToRowMapper.put(tbl.getSimpleName(), rowMapper);
 		}else {
 			rowMapper = tableToRowMapper.get(tbl.getSimpleName());	
@@ -374,18 +413,21 @@ public class DaoHelper {
 		return jdbcTemplate.queryForObject(sql, Long.class);
 	}
 
-	//TODO distinict
 	public <E extends OOEntity<?>> long count(Class<E> tbl, Cnd<E> cnd) {
 		if (cnd == null) return 0;
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
-		List<Object> sqlArgs = new ArrayList<>();
-		String whereCnd = cnd.sql(sqlArgs);
 		
-		String sql = String.format("SELECT COUNT(1) FROM %s WHERE %s;", tm.getTable(), whereCnd);
-		if (whereCnd.equals("")) {
-			sql = String.format("SELECT COUNT(1) FROM %s;", tm.getTable());
+		List<Object> sqlArgs = new ArrayList<>();
+		String afterWhere = genAfterWhere(sqlArgs,cnd);
+		if(cnd.group() != null && !cnd.group().equals("")) {
+			String sql = String.format("SELECT COUNT(1) FROM (SELECT 1 FROM %s %s) t;", tm.getTable(), afterWhere);
+			return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
+		}else {
+			String sql = String.format("SELECT COUNT(1) FROM %s %s;", tm.getTable(), afterWhere);
+			return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
 		}
-		return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
+		
+		
 	}
 
 	public <E extends OOEntity<?>> Page<E> find(Class<E> tbl,Cnd<E> cnd) {
@@ -398,7 +440,7 @@ public class DaoHelper {
 		Tuple2<String,Object[]> sqlAndArgs = queryFieldCnd(tm,tpl,cnd);
 		RowMapper<E> rowMapper = null;
 		if(!tableToRowMapper.containsKey(tbl.getSimpleName())) {
-			rowMapper = genRowMapper(tbl,tm);
+			rowMapper = genRowMapper(tbl,tm,tpl);
 			tableToRowMapper.put(tbl.getSimpleName(), rowMapper);
 		}else {
 			rowMapper = tableToRowMapper.get(tbl.getSimpleName());	
@@ -438,6 +480,23 @@ public class DaoHelper {
 		return page;
 	}
 
+	private <E extends OOEntity<?>> String genAfterWhere(List<Object> sqlArgs,Cnd<E> cnd) {
+		StringBuffer afterWhere = new StringBuffer();
+		String whereCnd = cnd.sql(sqlArgs);
+		if (!whereCnd.equals("")) {
+			afterWhere.append(String.format(" WHERE (%s)", whereCnd));
+		}
+		String having = cnd.getHaving();
+		if(having != null && !having.isEmpty()) {
+			afterWhere.append(String.format(" HAVING %s", having));
+		}
+		String group = cnd.group();
+		if(group != null && !group.isEmpty()) {
+			afterWhere.append(String.format(" GROUP BY %s", group));
+		}
+		return afterWhere.toString();
+	}
+	
 	private <E extends OOEntity<?>> Tuple2<String,Object[]> queryFieldCnd(TableMeta tm,SelectTpl<E> tpl,Cnd<E> cnd) {
 		StringBuffer sqlSelect = new StringBuffer("SELECT");
 		if(tpl != null) {
@@ -449,22 +508,9 @@ public class DaoHelper {
 		}else {
 			sqlSelect.append(" *");
 		}
+		sqlSelect.append(String.format(" FROM %s", tm.getTable()));
 		List<Object> sqlArgs = new ArrayList<>();
-		String whereCnd = cnd.sql(sqlArgs);
-		if (whereCnd.equals("")) {
-			sqlSelect.append(String.format(" FROM %s", tm.getTable()));
-		} else {
-			sqlSelect.append(String.format(" FROM %s WHERE (%s)", tm.getTable(), whereCnd));
-		}
-		String having = cnd.getHaving();
-		if(having != null && !having.isEmpty()) {
-			sqlSelect.append(String.format(" HAVING %s", having));
-		}
-		String group = cnd.group();
-		if(group != null && !group.isEmpty()) {
-			sqlSelect.append(String.format(" GROUP BY %s", group));
-		}
-		
+		genAfterWhere(sqlArgs,cnd);
 		return new Tuple2<String,Object[]>(sqlSelect.toString(),sqlArgs.toArray(new Object[0]));
 	}
 	
@@ -477,7 +523,7 @@ public class DaoHelper {
 		jdbcTemplate.query(sqlAndArgs.a, sqlAndArgs.b, new RowCallbackHandler() {
 			@Override
 			public void processRow(ResultSet rs) throws SQLException {
-				E row = createBy(tbl, tm, rs);
+				E row = createBy(tbl, tm, tpl,rs);
 				consumer.accept(row);
 			}
 		});
@@ -493,7 +539,7 @@ public class DaoHelper {
 		}
 		RowMapper<E> rowMapper = null;
 		if(!tableToRowMapper.containsKey(tbl.getSimpleName())) {
-			rowMapper = genRowMapper(tbl,tm);
+			rowMapper = genRowMapper(tbl,tm,null);
 			tableToRowMapper.put(tbl.getSimpleName(), rowMapper);
 		}else {
 			rowMapper = tableToRowMapper.get(tbl.getSimpleName());	
