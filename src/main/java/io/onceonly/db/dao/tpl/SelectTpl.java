@@ -26,7 +26,7 @@ public class SelectTpl<E> extends FuncTpl<E>{
 			if(func.equals("")) {
 				cols.add(argName);
 			}else if(func.equals("ROW_NUMBER() OVER()")){
-				cols.add(String.format("orderNum"));
+				cols.add("ORDERNUM_orderNum");
 			}else {
 				cols.add(String.format("%s_%s",func,argName));
 			}
@@ -41,7 +41,7 @@ public class SelectTpl<E> extends FuncTpl<E>{
 			if(func.equals("")) {
 				sb.append(argName + ",");
 			}else if(func.equals("ROW_NUMBER() OVER()")){
-				sb.append(String.format("%s orderNum,",func));
+				sb.append(String.format("%s ORDERNUM_orderNum,",func));
 			}else {
 				sb.append(String.format("%s(%s) %s_%s,",func,argName,func,argName));
 			}

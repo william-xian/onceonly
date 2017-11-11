@@ -1,6 +1,7 @@
 package io.onceonly.db.dao.impl;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -181,19 +182,27 @@ public class DaoHelper {
 						} catch (IllegalArgumentException|IllegalAccessException e) {
 							e.printStackTrace();
 						}
-						//TODO orderNum
-					}else if(col.matches("^(count|max|min|avg|sum)_.*")) {
+					}else if(col.matches("^(COUNT|ORDERNUM|MAX|MIN|AVG|SUM)_.*")) {
 						int sp = col.indexOf('_');
 						String func = col.substring(0, sp);
 						String colName = col.substring(sp+1);
 						colMeta = tm.getColumnMetaByName(colName);
 						if(colMeta != null) {
-							if(func.equals("count")) {
-								Long count = rs.getObject(colName, Long.class);
-								row.getExtra().put(col, count);
+							if(func.equals("COUNT")) {
+								Long count = rs.getObject(col, Long.class);
+								row.put(col, count);
+							}else if(func.equals("ORDERNUM")) {
+								Long no = rs.getObject(col, Long.class);
+								row.put(colName, no);
+							}else if(func.equals("SUM")) {
+								Long sum = rs.getObject(col, Long.class);
+								row.put(col, sum);
+							}else if(func.equals("AVG")) {
+								BigDecimal avg = rs.getObject(col, BigDecimal.class);
+								row.put(col, avg);
 							}else {
 								Field field = colMeta.getField();
-								Object val = rs.getObject(colName, colMeta.getJavaBaseType());
+								Object val = rs.getObject(col, colMeta.getJavaBaseType());
 								try {
 									field.set(row, val);
 								} catch (IllegalArgumentException|IllegalAccessException e) {
@@ -439,11 +448,15 @@ public class DaoHelper {
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
 		Tuple2<String,Object[]> sqlAndArgs = queryFieldCnd(tm,tpl,cnd);
 		RowMapper<E> rowMapper = null;
-		if(!tableToRowMapper.containsKey(tbl.getSimpleName())) {
+		String mapperKey = tbl.getSimpleName();
+		if(tpl != null && !tpl.columns().isEmpty()) {
+			mapperKey += String.join("-", tpl.columns());
+		}
+		if(!tableToRowMapper.containsKey(mapperKey)) {
 			rowMapper = genRowMapper(tbl,tm,tpl);
-			tableToRowMapper.put(tbl.getSimpleName(), rowMapper);
+			tableToRowMapper.put(mapperKey, rowMapper);
 		}else {
-			rowMapper = tableToRowMapper.get(tbl.getSimpleName());	
+			rowMapper = tableToRowMapper.get(mapperKey);	
 		}
 		Page<E> page = new Page<E>();
 		if(cnd.getPage() == null ||cnd.getPage() <= 0) {
@@ -465,10 +478,6 @@ public class DaoHelper {
 		}
 		if(page.getTotal() == null || page.getTotal() > 0) {
 			StringBuffer sql = new StringBuffer(sqlAndArgs.a);
-			String orderBy = cnd.getOrder();
-			if(orderBy != null && !orderBy.isEmpty()) {
-				sql.append(String.format(" ORDER BY %s", orderBy));
-			}
 			//TODO O1
 			sql.append(" LIMIT ? OFFSET ?");
 			List<Object> args = new ArrayList<>();
@@ -480,6 +489,14 @@ public class DaoHelper {
 		return page;
 	}
 
+	public <E extends OOEntity<?>> E fetch(Class<E> tbl,SelectTpl<E> tpl,Cnd<E> cnd) {
+		cnd.setPage(1);
+		Page<E> page = find(tbl,tpl,cnd);
+		if(page.getData().size() == 1) {
+			return page.getData().get(0);
+		}
+		return null;
+	}
 	private <E extends OOEntity<?>> String genAfterWhere(List<Object> sqlArgs,Cnd<E> cnd) {
 		StringBuffer afterWhere = new StringBuffer();
 		String whereCnd = cnd.sql(sqlArgs);
@@ -549,6 +566,7 @@ public class DaoHelper {
 		List<E> values = jdbcTemplate.query(sql, ids.toArray(), rowMapper);
 		return values;
 	}
+
 	
 }
 

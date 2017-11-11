@@ -197,12 +197,37 @@ public class DaoHelperTest extends DaoBaseTest{
 			ids.add(uc.getId());
 		}
 		daoHelper.insert(ucs);
-		SelectTpl<UserChief> tpl = new SelectTpl<UserChief>(UserChief.class);
-		tpl.using().setGenre(SelectTpl.USING_INT);
+		
 		Cnd<UserChief> cnd = new Cnd<UserChief>(UserChief.class);
 		cnd.groupBy().use().setGenre(Tpl.USING_INT);
-		Page<UserChief> list= daoHelper.find(UserChief.class, tpl, cnd);
-		System.out.println(list);
+		
+		SelectTpl<UserChief> distinct = new SelectTpl<UserChief>(UserChief.class);
+		distinct.using().setGenre(SelectTpl.USING_INT);
+		Page<UserChief> page= daoHelper.find(UserChief.class, distinct, cnd);
+		Assert.assertEquals(page.getTotal(), new Long(4));
+		
+		SelectTpl<UserChief> max = new SelectTpl<UserChief>(UserChief.class);
+		max.max().setGenre(SelectTpl.USING_INT);
+		UserChief ucMax = daoHelper.fetch(UserChief.class,max,cnd);
+		Assert.assertEquals(ucMax.getGenre(), new Integer(3));
+		
+		SelectTpl<UserChief> min = new SelectTpl<UserChief>(UserChief.class);
+		min.min().setGenre(SelectTpl.USING_INT);
+		UserChief ucMin = daoHelper.fetch(UserChief.class,min,cnd);
+		Assert.assertEquals(ucMin.getGenre(), new Integer(0));
+		
+		
+		SelectTpl<UserChief> sum = new SelectTpl<UserChief>(UserChief.class);
+		sum.sum().setGenre(SelectTpl.USING_INT);
+		UserChief ucSum = daoHelper.fetch(UserChief.class,sum,cnd);
+		Assert.assertEquals(ucSum.getExtra().get("SUM_genre"), new Long(13));
+		
+
+		SelectTpl<UserChief> avg = new SelectTpl<UserChief>(UserChief.class);
+		avg.avg().setGenre(SelectTpl.USING_INT);
+		UserChief ucAvg = daoHelper.fetch(UserChief.class,avg,cnd);
+		System.out.println(ucAvg);
+	
 		
 		daoHelper.remove(UserChief.class, ids);
 		daoHelper.delete(UserChief.class, ids);

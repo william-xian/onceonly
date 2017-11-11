@@ -44,6 +44,7 @@ public abstract class OOEntity<ID>{
 		if(extra == null) {
 			extra = new HashMap<String,Object>();
 		}
+		extra.put(key, val);
 		return extra;
 	}
 	public Map<String, Object> getExtra() {
