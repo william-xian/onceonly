@@ -352,7 +352,7 @@ public class DaoHelper {
 		List<Object> vals = new ArrayList<>();
 		vals.addAll(tpl.getArgs());
 		List<Object> sqlArgs = new ArrayList<>();
-		String cndSql = cnd.sql(sqlArgs);
+		String cndSql = cnd.whereSql(sqlArgs);
 		if(cndSql.isEmpty()) {
 			OOAssert.warnning("查询条件不能为空");
 		}
@@ -381,7 +381,7 @@ public class DaoHelper {
 		if(cnd == null) return 0;
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		List<Object> sqlArgs = new ArrayList<>();
-		String whereCnd = cnd.sql(sqlArgs);
+		String whereCnd = cnd.whereSql(sqlArgs);
 		if(whereCnd.equals("")) {
 			return 0;
 		}
@@ -406,7 +406,7 @@ public class DaoHelper {
 		if (cnd == null) return 0;
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		List<Object> sqlArgs = new ArrayList<>();
-		String whereCnd = cnd.sql(sqlArgs);
+		String whereCnd = cnd.whereSql(sqlArgs);
 		if (whereCnd.equals("")) {
 			return 0;
 		}
@@ -426,7 +426,7 @@ public class DaoHelper {
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		
 		List<Object> sqlArgs = new ArrayList<>();
-		String afterWhere = genAfterWhere(sqlArgs,cnd);
+		String afterWhere = cnd.afterWhere(sqlArgs);
 		if(cnd.group() != null && !cnd.group().equals("")) {
 			String sql = String.format("SELECT COUNT(1) FROM (SELECT 1 FROM %s %s) t;", tm.getTable(), afterWhere);
 			return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
@@ -476,11 +476,8 @@ public class DaoHelper {
 		}
 		if(page.getTotal() == null || page.getTotal() > 0) {
 			List<Object> args = new ArrayList<>();
-			StringBuffer sql = queryFieldCnd(tm,tpl,cnd,args);
-			//TODO O1
-			sql.append(" LIMIT ? OFFSET ?");
-			args.addAll(Arrays.asList(cnd.getPageSize(),(cnd.getPage()-1)*cnd.getPageSize()));
-			List<E> data = jdbcTemplate.query(sql.toString(),args.toArray(new Object[0]), rowMapper);
+			String sql = cnd.pageSql(tm,tpl,args);
+			List<E> data = jdbcTemplate.query(sql,args.toArray(new Object[0]), rowMapper);
 			page.setData(data);
 		}
 		return page;
@@ -494,38 +491,6 @@ public class DaoHelper {
 		}
 		return null;
 	}
-	private <E extends OOEntity<?>> String genAfterWhere(List<Object> sqlArgs,Cnd<E> cnd) {
-		StringBuffer afterWhere = new StringBuffer();
-		String whereCnd = cnd.sql(sqlArgs);
-		if (!whereCnd.equals("")) {
-			afterWhere.append(String.format(" WHERE (%s)", whereCnd));
-		}
-		String having = cnd.getHaving();
-		if(having != null && !having.isEmpty()) {
-			afterWhere.append(String.format(" HAVING %s", having));
-		}
-		String group = cnd.group();
-		if(group != null && !group.isEmpty()) {
-			afterWhere.append(String.format(" GROUP BY %s", group));
-		}
-		return afterWhere.toString();
-	}
-	
-	private <E extends OOEntity<?>> StringBuffer queryFieldCnd(TableMeta tm,SelectTpl<E> tpl,Cnd<E> cnd,List<Object> sqlArgs) {
-		StringBuffer sqlSelect = new StringBuffer("SELECT");
-		if(tpl != null) {
-			if(tpl.sql() != null && !tpl.sql().isEmpty()) {
-				sqlSelect.append(" " + tpl.sql());		
-			}else {
-				sqlSelect.append(" *");		
-			}
-		}else {
-			sqlSelect.append(" *");
-		}
-		sqlSelect.append(String.format(" FROM %s", tm.getTable()));
-		genAfterWhere(sqlArgs,cnd);
-		return sqlSelect;
-	}
 	
 	public <E extends OOEntity<?>> void download(Class<E> tbl,SelectTpl<E> tpl,Cnd<E> cnd, Consumer<E> consumer) {
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
@@ -533,7 +498,7 @@ public class DaoHelper {
 			return ;
 		}
 		List<Object> args = new ArrayList<>();
-		StringBuffer sql = queryFieldCnd(tm,tpl,cnd,args);
+		StringBuffer sql = cnd.wholeSql(tm, tpl, args);
 		jdbcTemplate.query(sql.toString(), args.toArray(new Object[0]), new RowCallbackHandler() {
 			@Override
 			public void processRow(ResultSet rs) throws SQLException {

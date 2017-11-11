@@ -2,6 +2,7 @@ package io.onceonly.db.dao;
 
 import java.lang.reflect.Method;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.assertj.core.internal.cglib.proxy.Enhancer;
@@ -11,14 +12,18 @@ import org.assertj.core.internal.cglib.proxy.MethodProxy;
 import io.onceonly.db.dao.tpl.GroupTpl;
 import io.onceonly.db.dao.tpl.HavingTpl;
 import io.onceonly.db.dao.tpl.OrderTpl;
+import io.onceonly.db.dao.tpl.SelectTpl;
 import io.onceonly.db.dao.tpl.SqlLogic;
 import io.onceonly.db.dao.tpl.Tpl;
+import io.onceonly.db.meta.TableMeta;
 import io.onceonly.util.OOLog;
 import io.onceonly.util.OOUtils;
 
 public class Cnd<E> extends Tpl{
 	private Integer page;
 	private Integer pageSize;
+	private E pageArg;
+	private Boolean isNext;
 	private HavingTpl<E> having;
 	private GroupTpl<E> group;
 	private OrderTpl<E> order;
@@ -55,6 +60,18 @@ public class Cnd<E> extends Tpl{
 		return page;
 	}
 
+	public E getPageArg() {
+		return pageArg;
+	}
+	public void setPageArg(E pageArg) {
+		this.pageArg = pageArg;
+	}
+	public Boolean getIsNext() {
+		return isNext;
+	}
+	public void setIsNext(Boolean isNext) {
+		this.isNext = isNext;
+	}
 	public E eq() {
 		opt = "=";
 		return tpl;
@@ -139,7 +156,7 @@ public class Cnd<E> extends Tpl{
 		return this;
 	}
 	
-	public String sql(List<Object> sqlArgs){
+	public String whereSql(List<Object> sqlArgs){
 		StringBuffer self = new StringBuffer();
 		if(selfSql.length() > 0) {
 			self.append("("+selfSql+")");
@@ -148,7 +165,7 @@ public class Cnd<E> extends Tpl{
 		for(int i =0; i < this.extLogics.size(); i++) {
 			SqlLogic sl = this.extLogics.get(i);
 			Cnd<E> c = extCnds.get(i);
-			String other = c.sql(sqlArgs);
+			String other = c.whereSql(sqlArgs);
 			if(!other.equals("")){
 				switch(sl) {
 				case AND:
@@ -174,6 +191,47 @@ public class Cnd<E> extends Tpl{
 			}
 		}
 		return self.toString();
+	}
+	
+	public String afterWhere(List<Object> sqlArgs) {
+		StringBuffer afterWhere = new StringBuffer();
+		String whereCnd = whereSql(sqlArgs);
+		if (!whereCnd.equals("")) {
+			afterWhere.append(String.format(" WHERE (%s)", whereCnd));
+		}
+		String having = getHaving();
+		if(having != null && !having.isEmpty()) {
+			afterWhere.append(String.format(" HAVING %s", having));
+		}
+		String group = group();
+		if(group != null && !group.isEmpty()) {
+			afterWhere.append(String.format(" GROUP BY %s", group));
+		}
+		return afterWhere.toString();
+	}
+	
+	public StringBuffer wholeSql(TableMeta tm,SelectTpl<E> tpl,List<Object> sqlArgs) {
+		StringBuffer sqlSelect = new StringBuffer("SELECT");
+		if(tpl != null) {
+			if(tpl.sql() != null && !tpl.sql().isEmpty()) {
+				sqlSelect.append(" " + tpl.sql());		
+			}else {
+				sqlSelect.append(" *");		
+			}
+		}else {
+			sqlSelect.append(" *");
+		}
+		sqlSelect.append(String.format(" FROM %s", tm.getTable()));
+		afterWhere(sqlArgs);
+		return sqlSelect;
+	}
+	
+	//TODO 根据上一条数据 和order语句计算相临的两页数据
+	public String pageSql(TableMeta tm,SelectTpl<E> tpl,List<Object> sqlArgs) {
+		StringBuffer s = wholeSql(tm,tpl,sqlArgs);
+		s.append(" LIMIT ? OFFSET ?");
+		sqlArgs.addAll(Arrays.asList(getPageSize(),(getPage()-1)*getPageSize()));
+		return s.toString();
 	}
 	
 	public HavingTpl<E> having() {
