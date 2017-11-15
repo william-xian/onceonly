@@ -69,6 +69,9 @@ public class DaoHelper {
 		cnd.setPageSize(Integer.MAX_VALUE);
 		Page<OOTableMeta> page = this.find(OOTableMeta.class, cnd);
 		for(OOTableMeta meta:page.getData()) {
+			if(meta.getName().equals(OOTableMeta.class.getSimpleName())){
+				continue;
+			}
 			TableMeta old = OOUtils.createFromJson(meta.getVal(), TableMeta.class);
 			old.freshNameToField();
 			tableToTableMeta.put(old.getTable(), old);
@@ -134,6 +137,7 @@ public class DaoHelper {
 			ootm.setId(idGenerator.next(OOTableMeta.class));
 			ootm.setName(name);
 			ootm.setVal(val);
+			ootm.setCreatetime(System.currentTimeMillis());
 			insert(ootm);
 		}else {
 			ootm.setVal(val);
@@ -156,18 +160,22 @@ public class DaoHelper {
 		}else {
 			TableMeta tm = TableMeta.createBy(tbl);
 			tm.freshNameToField();
-			tableToTableMeta.put(tm.getTable(), tm);
 			if(old.equals(tm)){
 				return false;
 			} else {
+				System.err.println(OOUtils.toJSON(tm));
+				System.err.println(OOUtils.toJSON(old));
+				old.freshNameToField();
 				List<String> sqls = old.upgradeTo(tm);
 				if(!sqls.isEmpty()){
-					jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));	
+					System.err.println(String.join(";"	, sqls));
+					jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));
+					tableToTableMeta.put(tm.getTable(), tm);
+					Cnd<OOTableMeta> cnd = new Cnd<>(OOTableMeta.class);
+					cnd.eq().setName(tbl.getSimpleName());
+					OOTableMeta ootm = this.fetch(OOTableMeta.class, null, cnd);
+					this.save(ootm, tm.getTable(), OOUtils.toJSON(tm));
 				}
-				Cnd<OOTableMeta> cnd = new Cnd<>(OOTableMeta.class);
-				cnd.eq().setName(tbl.getSimpleName());
-				OOTableMeta ootm = this.fetch(OOTableMeta.class, null, cnd);
-				this.save(ootm, tm.getTable(), OOUtils.toJSON(tm));
 				return true;
 			}
 		}

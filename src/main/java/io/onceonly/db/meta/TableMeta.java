@@ -125,6 +125,7 @@ public class TableMeta {
 	}
 	private void freshConstraintMetaTable() {
 		if(columnMetas != null && !columnMetas.isEmpty()) {
+			nameToColumnMeta.clear();
 			fieldConstraint = new ArrayList<>(columnMetas.size());
 			for(ColumnMeta cm:columnMetas) {
 				if(cm.unique){
@@ -149,6 +150,7 @@ public class TableMeta {
 					cnsMeta.setRefTable(cm.refTable);
 					fieldConstraint.add(cnsMeta);
 				}
+				nameToColumnMeta.put(cm.getName(), cm);
 			}
 		}
 	}
@@ -206,6 +208,8 @@ public class TableMeta {
 		List<ConstraintMeta> addForeignKeys = new ArrayList<>();
 		for(ColumnMeta ocm:otherColumn) {
 			ColumnMeta cm = nameToColumnMeta.get(ocm.name);
+			System.err.println(" cm:" + OOUtils.toJSON(cm));
+			System.err.println("ocm:" + OOUtils.toJSON(ocm));
 			if(cm == null) {				
 				newColumns.add(ocm);
 			}else {

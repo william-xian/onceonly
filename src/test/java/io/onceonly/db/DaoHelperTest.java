@@ -22,7 +22,6 @@ public class DaoHelperTest extends DaoBaseTest{
 	@BeforeClass
 	public static void init() {
 		initDao();
-		daoHelper.createOrUpdate(UserChief.class);
 	}
 	@AfterClass
 	public static void cleanup() {
