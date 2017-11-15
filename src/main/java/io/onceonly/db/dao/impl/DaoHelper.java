@@ -28,6 +28,7 @@ import io.onceonly.db.meta.ColumnMeta;
 import io.onceonly.db.meta.DDMeta;
 import io.onceonly.db.meta.TableMeta;
 import io.onceonly.db.tbl.OOEntity;
+import io.onceonly.db.tbl.OOTableMeta;
 import io.onceonly.util.OOAssert;
 import io.onceonly.util.OOLog;
 import io.onceonly.util.OOUtils;
@@ -39,17 +40,50 @@ public class DaoHelper {
 	@SuppressWarnings("rawtypes")
 	private Map<String,RowMapper> tableToRowMapper = new HashMap<>();
 	private Map<String,DDMeta> tableToDDMata;
+	private List<Class<? extends OOEntity<?>>> entities;
 	public DaoHelper(){
 	}
 	
-	public DaoHelper(JdbcTemplate jdbcTemplate, IdGenerator idGenerator, Map<String, TableMeta> tableToTableMeta) {
+	public DaoHelper(JdbcTemplate jdbcTemplate, IdGenerator idGenerator,List<Class<? extends OOEntity<?>>> entitys) {
 		super();
-		init(jdbcTemplate,idGenerator,tableToTableMeta);
+		init(jdbcTemplate,idGenerator,entitys);
 	}
-	public void init(JdbcTemplate jdbcTemplate,IdGenerator idGenerator, Map<String, TableMeta> tableToTableMeta) {
+	public void init(JdbcTemplate jdbcTemplate,IdGenerator idGenerator,List<Class<? extends OOEntity<?>>> entities) {
 		this.jdbcTemplate = jdbcTemplate;
 		this.idGenerator = idGenerator;
-		this.tableToTableMeta = tableToTableMeta;
+		this.tableToTableMeta = new HashMap<>();
+		TableMeta tm = TableMeta.createBy(OOTableMeta.class);
+		tm.freshNameToField();
+		tableToTableMeta.put(tm.getTable(), tm);
+		try {
+			this.count(OOTableMeta.class);
+		}catch(Exception e) {
+			if(e.getMessage().contains("does not exist")) {
+				tableToTableMeta.remove(tm.getTable());
+				this.createOrUpdate(OOTableMeta.class);
+				tableToTableMeta.put(tm.getTable(), tm);
+			}
+		}
+		Cnd<OOTableMeta> cnd = new Cnd<>(OOTableMeta.class);
+		cnd.setPage(1);
+		cnd.setPageSize(Integer.MAX_VALUE);
+		Page<OOTableMeta> page = this.find(OOTableMeta.class, cnd);
+		for(OOTableMeta meta:page.getData()) {
+			TableMeta old = OOUtils.createFromJson(meta.getVal(), TableMeta.class);
+			old.freshNameToField();
+			tableToTableMeta.put(old.getTable(), old);
+		}
+		if(entities != null) {
+			this.entities = entities;
+			for(Class<? extends OOEntity<?>> tbl:entities) {
+				this.createOrUpdate(tbl);
+			}	
+		}
+		
+	}
+
+	public List<Class<? extends OOEntity<?>>> getEntities() {
+		return entities;
 	}
 
 	public IdGenerator getIdGenerator() {
@@ -94,32 +128,49 @@ public class DaoHelper {
 		this.tableToDDMata = tableToDDMata;
 	}
 
+	private void save(OOTableMeta ootm,String name,String val) {
+		if(ootm==null) {
+			ootm = new OOTableMeta();
+			ootm.setId(idGenerator.next(OOTableMeta.class));
+			ootm.setName(name);
+			ootm.setVal(val);
+			insert(ootm);
+		}else {
+			ootm.setVal(val);
+			update(ootm);
+		}
+	}
+	
 	public <E extends OOEntity<?>> boolean createOrUpdate(Class<E> tbl) {
 		TableMeta old = tableToTableMeta.get(tbl.getSimpleName());
 		if(old == null) {
 			old = TableMeta.createBy(tbl);
+			old.freshNameToField();
 			List<String> sqls = old.createTableSql();
 			if(!sqls.isEmpty()) {
 				jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));	
 			}
-			old.freshNameToField();
-			tableToTableMeta.put(tbl.getSimpleName(), old);
+			tableToTableMeta.put(old.getTable(), old);
+			this.save(null, old.getTable(), OOUtils.toJSON(old));
 			return true;
 		}else {
 			TableMeta tm = TableMeta.createBy(tbl);
+			tm.freshNameToField();
+			tableToTableMeta.put(tm.getTable(), tm);
 			if(old.equals(tm)){
 				return false;
-			} else if(tm != null){
+			} else {
 				List<String> sqls = old.upgradeTo(tm);
 				if(!sqls.isEmpty()){
 					jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));	
 				}
-				tm.freshNameToField();
-				tableToTableMeta.put(tbl.getSimpleName(), tm);
+				Cnd<OOTableMeta> cnd = new Cnd<>(OOTableMeta.class);
+				cnd.eq().setName(tbl.getSimpleName());
+				OOTableMeta ootm = this.fetch(OOTableMeta.class, null, cnd);
+				this.save(ootm, tm.getTable(), OOUtils.toJSON(tm));
 				return true;
 			}
 		}
-		return false;
 	}
 
 	public <E extends OOEntity<?>> boolean drop(Class<E> tbl) {
@@ -333,7 +384,7 @@ public class DaoHelper {
 		return update(entity,true);	
 	}
 	
-	public <E extends OOEntity<?>> int updateByTmpl(Class<E> tbl, UpdateTpl<E> tpl) {
+	public <E extends OOEntity<?>> int updateByTpl(Class<E> tbl, UpdateTpl<E> tpl) {
 		OOAssert.warnning(tpl.getId() != null && tpl != null,"Are you sure to update a null value?");
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
@@ -345,7 +396,7 @@ public class DaoHelper {
 		return jdbcTemplate.update(sql, vals.toArray());
 	}
 	
-	public <E extends OOEntity<?>> int updateByTmplCnd(Class<E> tbl,UpdateTpl<E> tpl,Cnd<E> cnd) {
+	public <E extends OOEntity<?>> int updateByTplCnd(Class<E> tbl,UpdateTpl<E> tpl,Cnd<E> cnd) {
 		OOAssert.warnning(tpl != null,"Are you sure to update a null value?");
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
@@ -528,7 +579,5 @@ public class DaoHelper {
 		List<E> values = jdbcTemplate.query(sql, ids.toArray(), rowMapper);
 		return values;
 	}
-
-	
 }
 

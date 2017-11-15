@@ -44,5 +44,9 @@ public final class OOUtils {
 	public static String toJSON(Object obj) {
 		return GSON.toJson(obj);
 	}
+
+    public static <T> T createFromJson(String json,Class<T> entityClass) {
+    	return GSON.fromJson(json, entityClass);
+    }
 	
 }

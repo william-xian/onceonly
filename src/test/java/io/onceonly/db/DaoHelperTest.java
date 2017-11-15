@@ -26,7 +26,6 @@ public class DaoHelperTest extends DaoBaseTest{
 	}
 	@AfterClass
 	public static void cleanup() {
-		daoHelper.drop(UserChief.class);
 	}
 	//@Test
 	public void insert_get_remove_delete() {
@@ -137,7 +136,7 @@ public class DaoHelperTest extends DaoBaseTest{
 		UpdateTpl<UserChief> tpl = new UpdateTpl<>(UserChief.class);
 		tpl.setId(uc1.getId());
 		tpl.add().setGenre(1);
-		daoHelper.updateByTmpl(UserChief.class,tpl);
+		daoHelper.updateByTpl(UserChief.class,tpl);
 		UserChief db1 = daoHelper.get(UserChief.class, tpl.getId());
 		Assert.assertEquals(1,db1.getGenre().intValue());
 		UserChief db2 = daoHelper.get(UserChief.class, uc2.getId());

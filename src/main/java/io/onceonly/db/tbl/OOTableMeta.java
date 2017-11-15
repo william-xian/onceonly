@@ -4,18 +4,19 @@ import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Tbl;
 
 @Tbl
-public final class OOTableMeta extends OOEntity<Long>{
+public class OOTableMeta extends OOEntity<Long>{
 	@Col(size=32,nullable=true)
-	private String tag;
+	private String name;
 	@Col(nullable=false,colDef="TEXT")
 	private String val;
 	@Col(nullable=true)
 	private Long createtime;
-	public String getTag() {
-		return tag;
+	
+	public String getName() {
+		return name;
 	}
-	public void setTag(String tag) {
-		this.tag = tag;
+	public void setName(String name) {
+		this.name = name;
 	}
 	public String getVal() {
 		return val;

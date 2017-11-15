@@ -16,7 +16,7 @@ import io.onceonly.db.annotation.OId;
 public abstract class OOEntity<ID>{
 	@OId
     @Col(nullable = false)
-	protected ID id;
+	protected Long id;
     @Col(colDef="boolean default false",nullable = false)
 	protected transient Boolean rm;
 	/** 用户存储额外数据，如 聚合函数 */
@@ -28,10 +28,10 @@ public abstract class OOEntity<ID>{
 	}
 	public void initId(){
 	}
-	public ID getId() {
+	public Long getId() {
 		return id;
 	}
-	public void setId(ID id) {
+	public void setId(Long id) {
 		this.id = id;
 	}
 	public Boolean getRm() {

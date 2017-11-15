@@ -2,13 +2,17 @@ package io.onceonly.db;
 
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Properties;
 
 import org.apache.tomcat.jdbc.pool.DataSource;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import cn.mx.app.entity.UserChief;
 import io.onceonly.db.dao.IdGenerator;
 import io.onceonly.db.dao.impl.DaoHelper;
+import io.onceonly.db.tbl.OOEntity;
 import io.onceonly.util.IDGenerator;
 
 public class DaoBaseTest {
@@ -33,17 +37,17 @@ public class DaoBaseTest {
 		ds.setMaxActive(Integer.parseInt(maxActive));
 		jdbcTemplate.setDataSource(ds);
 		System.out.println("loaded jdbcTemplate");
-		IdGenerator generator = new IdGenerator() {
+		IdGenerator idGenerator = new IdGenerator() {
 			@Override
-			public Object next(Class<?> entityClass) {
+			public Long next(Class<?> entityClass) {
 				return IDGenerator.randomID();
 			}
 			
 		};
 		DDHoster.upgrade();
-		daoHelper.setTableToTableMata(DDHoster.tableToTableMeta);
-		daoHelper.setJdbcTemplate(jdbcTemplate);
-		daoHelper.setIdGenerator(generator);;
+		List<Class<? extends OOEntity<?>>> entities = new ArrayList<>();
+		entities.add(UserChief.class);
+		daoHelper.init(jdbcTemplate, idGenerator,entities);
 		}catch(IOException e) {
 			e.printStackTrace();
 		}
