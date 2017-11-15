@@ -27,7 +27,6 @@ public class DDHoster {
 			TableMeta tm = TableMeta.createBy(entity);
 			if(tm != null) {
 				tableToEntity.put(table, entity);
-				tm.freshNameToField();
 				tableToTableMeta.put(table, tm);		
 			}			
 		}

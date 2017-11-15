@@ -113,7 +113,7 @@ public class ConstraintMeta {
 	
 	public String dropSql() {
 		String cName = (name==null?genName():name);
-		return String.format("ALTER TABLE %s DROP CONSTRAINT %s_%s;",table, table,cName);
+		return String.format("ALTER TABLE %s DROP CONSTRAINT %s;",table,cName);
 	}
 	
 	public static List<String> addConstraintSql(List<ConstraintMeta> cms) {

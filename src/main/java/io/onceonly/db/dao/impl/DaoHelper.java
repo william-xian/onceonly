@@ -53,7 +53,6 @@ public class DaoHelper {
 		this.idGenerator = idGenerator;
 		this.tableToTableMeta = new HashMap<>();
 		TableMeta tm = TableMeta.createBy(OOTableMeta.class);
-		tm.freshNameToField();
 		tableToTableMeta.put(tm.getTable(), tm);
 		try {
 			this.count(OOTableMeta.class);
@@ -73,6 +72,7 @@ public class DaoHelper {
 				continue;
 			}
 			TableMeta old = OOUtils.createFromJson(meta.getVal(), TableMeta.class);
+			old.freshConstraintMetaTable();
 			old.freshNameToField();
 			tableToTableMeta.put(old.getTable(), old);
 		}
@@ -149,7 +149,6 @@ public class DaoHelper {
 		TableMeta old = tableToTableMeta.get(tbl.getSimpleName());
 		if(old == null) {
 			old = TableMeta.createBy(tbl);
-			old.freshNameToField();
 			List<String> sqls = old.createTableSql();
 			if(!sqls.isEmpty()) {
 				jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));	
@@ -159,16 +158,11 @@ public class DaoHelper {
 			return true;
 		}else {
 			TableMeta tm = TableMeta.createBy(tbl);
-			tm.freshNameToField();
 			if(old.equals(tm)){
 				return false;
 			} else {
-				System.err.println(OOUtils.toJSON(tm));
-				System.err.println(OOUtils.toJSON(old));
-				old.freshNameToField();
 				List<String> sqls = old.upgradeTo(tm);
 				if(!sqls.isEmpty()){
-					System.err.println(String.join(";"	, sqls));
 					jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));
 					tableToTableMeta.put(tm.getTable(), tm);
 					Cnd<OOTableMeta> cnd = new Cnd<>(OOTableMeta.class);

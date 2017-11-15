@@ -25,7 +25,7 @@ public class TableMeta {
 	String extend;
 	String entity;
 	ConstraintMeta primaryKey;
-	List<ConstraintMeta> fieldConstraint = new ArrayList<>(0);
+	transient List<ConstraintMeta> fieldConstraint = new ArrayList<>(0);
 	List<ConstraintMeta> constraints;
 	List<ColumnMeta> columnMetas = new ArrayList<>(0);
 	transient Map<String,ColumnMeta> nameToColumnMeta = new HashMap<>();
@@ -89,8 +89,8 @@ public class TableMeta {
 		for(ColumnMeta cm:columnMetas) {
 			this.nameToColumnMeta.put(cm.name, cm);
 		}
-		freshConstraintMetaTable();
 	}
+	
 	public void freshNameToField() {
 		try {
 			Class<?> tblEntity = this.getClass().getClassLoader().loadClass(entity);
@@ -123,7 +123,7 @@ public class TableMeta {
 			OOAssert.fatal("无法加载 %s", entity);
 		}
 	}
-	private void freshConstraintMetaTable() {
+	public void freshConstraintMetaTable() {
 		if(columnMetas != null && !columnMetas.isEmpty()) {
 			nameToColumnMeta.clear();
 			fieldConstraint = new ArrayList<>(columnMetas.size());
@@ -154,6 +154,7 @@ public class TableMeta {
 			}
 		}
 	}
+	
 	
 	private List<String> alterColumnSql(List<ColumnMeta> columnMetas) {
 		List<String> sqls = new ArrayList<>();
@@ -363,6 +364,8 @@ public class TableMeta {
 			OOAssert.fatal("不支持符合主键 %s(%s)", tm.table,String.join(",", primaryKeys));
 		}
 		tm.setPrimaryKey(primaryKeys.get(0));
+		tm.freshNameToField();
+		tm.freshConstraintMetaTable();
 		return tm;
 	}
 	/**  
