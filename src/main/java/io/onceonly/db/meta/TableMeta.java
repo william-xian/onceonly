@@ -284,16 +284,6 @@ public class TableMeta {
 		sqls.addAll(ConstraintMeta.addConstraintSql(addUniqueConstraint));
 		return sqls;
 	}
-	/**
-	 * TODO
-	 * 升级数据库，废弃的数据库字段不需要使用了，删除操作sql
-	 * @param other
-	 * @return
-	 */
-	public String cleanByTo(TableMeta other) {
-		StringBuffer sql = new StringBuffer();
-		return sql.toString();
-	}
 	public static TableMeta createBy(Class<?> entity) {
 		Tbl tbl = entity.getAnnotation(Tbl.class);
 		if(tbl == null) {

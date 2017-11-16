@@ -168,7 +168,7 @@ public class DDEngine {
 	}
 
 	/**
-	 * 根据主表和相关参数 推倒出依赖的相关表
+	 * 根据主表和相关参数 推导出依赖的相关表
 	 * @param mainEntity
 	 * @param params
 	 * @return
