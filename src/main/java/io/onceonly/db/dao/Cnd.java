@@ -13,7 +13,6 @@ import io.onceonly.db.dao.tpl.GroupTpl;
 import io.onceonly.db.dao.tpl.HavingTpl;
 import io.onceonly.db.dao.tpl.OrderTpl;
 import io.onceonly.db.dao.tpl.SelectTpl;
-import io.onceonly.db.dao.tpl.SqlLogic;
 import io.onceonly.db.dao.tpl.Tpl;
 import io.onceonly.db.meta.TableMeta;
 import io.onceonly.util.OOLog;
@@ -30,8 +29,8 @@ public class Cnd<E> extends Tpl{
 	private List<Object> args = new ArrayList<>();
 	private String opt = null;
 	private Object[] inVals;
-	private SqlLogic logic = null;
-	private List<SqlLogic> extLogics = new ArrayList<>();
+	private String logic = null;
+	private List<String> extLogics = new ArrayList<>();
 	private List<Cnd<E>> extCnds = new ArrayList<>();
 	private StringBuffer selfSql = new StringBuffer();
 	private Class<E> tplClass;
@@ -123,35 +122,35 @@ public class Cnd<E> extends Tpl{
 	}
 	public Cnd<E> and() {
 		if(opt != null) {
-			logic = SqlLogic.AND;	
+			logic = "AND";	
 		}
 		return this;
 	}
 	public Cnd<E> or() {
 		if(opt != null) {
-			logic = SqlLogic.OR;	
+			logic = "OR";	
 		}
 		return this;
 	}
 	public Cnd<E> not() {
 		if(opt != null) {
-			logic = SqlLogic.NOT;	
+			logic = "NOT";	
 		}
 		return this;
 	}
 
 	public Cnd<E> and(Cnd<E> extCnd) {
-		extLogics.add(SqlLogic.AND);
+		extLogics.add("AND");
 		extCnds.add(extCnd);
 		return this;
 	}
 	public Cnd<E> or(Cnd<E> extCnd) {
-		extLogics.add(SqlLogic.OR);
+		extLogics.add("OR");
 		extCnds.add(extCnd);
 		return this;
 	}
 	public Cnd<E> not(Cnd<E> extCnd) {
-		extLogics.add(SqlLogic.NOT);
+		extLogics.add("NOT");
 		extCnds.add(extCnd);
 		return this;
 	}
@@ -163,20 +162,20 @@ public class Cnd<E> extends Tpl{
 		}
 		sqlArgs.addAll(args);
 		for(int i =0; i < this.extLogics.size(); i++) {
-			SqlLogic sl = this.extLogics.get(i);
+			String sl = this.extLogics.get(i);
 			Cnd<E> c = extCnds.get(i);
 			String other = c.whereSql(sqlArgs);
 			if(!other.equals("")){
 				switch(sl) {
-				case AND:
+				case "AND":
 					if(self.length() > 0) self.append(" AND");
 					self.append(other);
 					break;
-				case OR:
+				case "OR":
 					if(self.length() > 0) self.append(" OR");
 					self.append(other);
 					break;
-				case NOT:
+				case "NOT":
 					if(self.length() > 0) {
 						self.append(" AND NOT");
 					} else {

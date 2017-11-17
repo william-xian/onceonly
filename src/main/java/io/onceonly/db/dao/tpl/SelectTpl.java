@@ -40,6 +40,10 @@ public class SelectTpl<E> extends FuncTpl<E>{
 			String argName = argNames.get(i);
 			if(func.equals("")) {
 				sb.append(argName + ",");
+			}else if(func.equals("MAX")){
+				sb.append(String.format("%s(%s) %s,",func,argName,argName));
+			}else if(func.equals("MIN")){
+				sb.append(String.format("%s(%s) %s,",func,argName,argName));
 			}else if(func.equals("ROW_NUMBER() OVER()")){
 				sb.append(String.format("%s ORDERNUM_orderNum,",func));
 			}else {

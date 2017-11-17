@@ -16,9 +16,9 @@ import io.onceonly.util.OOLog;
  */
 public class HavingTpl<E> extends FuncTpl<E>{
 	private List<Object> args = new ArrayList<>();
-	private List<SqlOpt> opts = new ArrayList<>();
-	private List<SqlLogic> logics = new ArrayList<>();
-	private List<SqlLogic> extLogics = new ArrayList<>();
+	private List<String> opts = new ArrayList<>();
+	private List<String> logics = new ArrayList<>();
+	private List<String> extLogics = new ArrayList<>();
 	private List<HavingTpl<E>> extTpls = new ArrayList<>();
 
 	public HavingTpl(Class<E> tplClass) {
@@ -26,63 +26,63 @@ public class HavingTpl<E> extends FuncTpl<E>{
 	}
 	
 	public E eq(Object arg) {
-		opts.add(SqlOpt.EQ);
+		opts.add("=");
 		args.add(arg);
 		return tpl;
 	}
 	public E ne(Object arg) {
-		opts.add(SqlOpt.NE);
+		opts.add("!=");
 		args.add(arg);
 		return tpl;
 	}
 	public E lt(Object arg) {
-		opts.add(SqlOpt.LT);
+		opts.add("<");
 		args.add(arg);
 		return tpl;
 	}
 	public E le(Object arg) {
-		opts.add(SqlOpt.LE);
+		opts.add("<=");
 		args.add(arg);
 		return tpl;
 	}
 	public E gt(Object arg) {
-		opts.add(SqlOpt.GT);
+		opts.add(">");
 		args.add(arg);
 		return tpl;
 	}
 	public E ge(Object arg) {
-		opts.add(SqlOpt.GE);
+		opts.add(">=");
 		args.add(arg);
 		return tpl;
 	}
 
 	public HavingTpl<E> and() {
-		logics.add(SqlLogic.AND);
+		logics.add("AND");
 		return this;
 	}
 	
 	public HavingTpl<E> or() {
-		logics.add(SqlLogic.OR);
+		logics.add("OR");
 		return this;
 	}
 	public HavingTpl<E> not() {
-		logics.add(SqlLogic.NOT);
+		logics.add("NOT");
 		return this;
 	}
 	
 	public HavingTpl<E> and(HavingTpl<E> tpl) {
-		extLogics.add(SqlLogic.AND);
+		extLogics.add("AND");
 		extTpls.add(tpl);
 		return this;
 	}
 	
 	public HavingTpl<E> or(HavingTpl<E> tpl) {
-		extLogics.add(SqlLogic.OR);
+		extLogics.add("OR");
 		extTpls.add(tpl);
 		return this;
 	}
 	public HavingTpl<E> not(HavingTpl<E> tpl) {
-		extLogics.add(SqlLogic.NOT);
+		extLogics.add("NOT");
 		extTpls.add(tpl);
 		return this;
 	}
@@ -92,52 +92,22 @@ public class HavingTpl<E> extends FuncTpl<E>{
 		for(int i = 0; i < funcs.size(); i++) {
 			String func = funcs.get(i);
 			String argName = argNames.get(i);
-			SqlOpt opt = opts.get(i);
 			String logic = "";
 			if(i < logics.size()) {
-				logic = logics.get(i).name();
+				logic = logics.get(i);
 			}
-			String strOpt = null;
-			switch(opt) {
-			case EQ:
-				strOpt = "=";
-				break;
-			case GT:
-				strOpt = ">";
-				break;
-			case GE:
-				strOpt = ">=";
-				break;
-			case LT:
-				strOpt = "<";
-				break;
-			case LE:
-				strOpt = "<=";
-				break;
-			case LIKE:
-				strOpt = "like";
-				break;
-			case PATTERN:
-				strOpt = "~*";
-				break;
-			case IN:
-				strOpt = "in";
-				break;
-				default:
-			}
-			if(strOpt != null) {
-				sb.append(String.format("%s(%s) %s ? %s"	, func,argName,strOpt,logic));
-			}else {
-				OOLog.warnning("%s", opt.name());
+			String opt = opts.get(i);
+			if(opt != null) {
+				sb.append(String.format("%s(%s) %s ? %s"	, func,argName,opt,logic));
 			}
 		}
 		for(int i = 0; i < extTpls.size(); i++) {
-			SqlLogic extLogic = extLogics.get(i);
+			String extLogic = extLogics.get(i);
 			String extSql = extTpls.get(i).sql();
 			if(!extSql.equals("")) {
-				sb.append(String.format("%s (%s)", extLogic.name(),extTpls.get(i).sql()));	
+				sb.append(String.format("%s (%s)", extLogic,extTpls.get(i).sql()));	
 			}else {
-				OOLog.warnning("the sql of having's %s is empty", extLogic.name());
+				OOLog.warnning("the sql of having's %s is empty", extLogic);
 			}
 		}
 		return sb.toString();

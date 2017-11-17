@@ -218,7 +218,7 @@ public class DaoHelperTest extends DaoBaseTest{
 		SelectTpl<UserChief> sum = new SelectTpl<UserChief>(UserChief.class);
 		sum.sum().setGenre(SelectTpl.USING_INT);
 		UserChief ucSum = daoHelper.fetch(UserChief.class,sum,cnd);
-		Assert.assertEquals(ucSum.getExtra().get("SUM_genre"), new Long(13));
+		Assert.assertEquals(ucSum.getExtra().get("sum_genre"), new Long(13));
 		
 
 		SelectTpl<UserChief> avg = new SelectTpl<UserChief>(UserChief.class);

@@ -1,9 +1,8 @@
 package io.onceonly.db.dao.impl;
 
-import java.lang.reflect.Field;
-import java.math.BigDecimal;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -193,18 +192,18 @@ public class DaoHelper {
 		return jdbcTemplate.batchUpdate(sql, batchArgs);
 	}
 	
-	private static <E extends OOEntity<?>> RowMapper<E> genRowMapper(Class<E> tbl,TableMeta tm,SelectTpl<E> tpl) {
+	private static <E extends OOEntity<?>> RowMapper<E> genRowMapper(Class<E> tbl,TableMeta tm) {
 		RowMapper<E> rowMapper = new RowMapper<E>(){
 			@Override
 			public E mapRow(ResultSet rs, int rowNum) throws SQLException {
-				E row = createBy(tbl,tm,tpl,rs);
+				E row = createBy(tbl,tm,rs);
 				return row;
 			}
 		};
 		return rowMapper;
 	}
 	
-	public static <E extends OOEntity<?>> E createBy(Class<E> tbl,TableMeta tm,SelectTpl<E> tpl,ResultSet rs) throws SQLException {
+	public static <E extends OOEntity<?>> E createBy(Class<E> tbl,TableMeta tm,ResultSet rs) throws SQLException {
 		E row = null;
 		try {
 			row = tbl.newInstance();
@@ -212,64 +211,22 @@ public class DaoHelper {
 			OOAssert.warnning("%s InstantiationException", tbl);
 		}
 		if(row != null) {
-			if(tpl == null || tpl.columns().isEmpty()) {
-				List<ColumnMeta> columnMetas = tm.getColumnMetas();
-				for (ColumnMeta colMeta : columnMetas) {
-					Field field = colMeta.getField();
-					Object val = rs.getObject(colMeta.getName(), colMeta.getJavaBaseType());
+			ResultSetMetaData rsmd = rs.getMetaData();
+			for (int i = 1; i <= rsmd.getColumnCount(); i++) {
+				String colName = rsmd.getColumnName(i);
+				ColumnMeta cm = tm.getColumnMetaByName(colName);
+				if (cm != null) {
 					try {
-						field.set(row, val);
-					} catch (IllegalArgumentException|IllegalAccessException e) {
+						Object val = rs.getObject(colName, cm.getJavaBaseType());
+						cm.getField().set(row, val);
+					} catch (IllegalArgumentException | IllegalAccessException e) {
 						e.printStackTrace();
 					}
-				}
-			}else {
-				for (String col : tpl.columns()) {
-					ColumnMeta colMeta = tm.getColumnMetaByName(col);
-					if(colMeta != null) {
-						Field field = colMeta.getField();
-						Object val = rs.getObject(colMeta.getName(), colMeta.getJavaBaseType());
-						try {
-							field.set(row, val);
-						} catch (IllegalArgumentException|IllegalAccessException e) {
-							e.printStackTrace();
-						}
-					}else if(col.matches("^(COUNT|ORDERNUM|MAX|MIN|AVG|SUM)_.*")) {
-						int sp = col.indexOf('_');
-						String func = col.substring(0, sp);
-						String colName = col.substring(sp+1);
-						colMeta = tm.getColumnMetaByName(colName);
-						if(colMeta != null) {
-							if(func.equals("COUNT")) {
-								Long count = rs.getObject(col, Long.class);
-								row.put(col, count);
-							}else if(func.equals("ORDERNUM")) {
-								Long no = rs.getObject(col, Long.class);
-								row.put(colName, no);
-							}else if(func.equals("SUM")) {
-								Long sum = rs.getObject(col, Long.class);
-								row.put(col, sum);
-							}else if(func.equals("AVG")) {
-								BigDecimal avg = rs.getObject(col, BigDecimal.class);
-								row.put(col, avg);
-							}else {
-								Field field = colMeta.getField();
-								Object val = rs.getObject(col, colMeta.getJavaBaseType());
-								try {
-									field.set(row, val);
-								} catch (IllegalArgumentException|IllegalAccessException e) {
-									e.printStackTrace();
-								}
-							}
-						}else {
-							OOLog.warnning("Unknown field %s", col);
-						}
-					}else {
-						OOLog.warnning("Unknown field %s", col);
-					}
-					
+				} else {
+					row.put(colName, rs.getObject(i));
 				}
 			}
+			return row;
 		}
 		return row;
 	}
@@ -282,7 +239,7 @@ public class DaoHelper {
 		}
 		RowMapper<E> rowMapper = null;
 		if(!tableToRowMapper.containsKey(tbl.getSimpleName())) {
-			rowMapper = genRowMapper(tbl,tm,null);
+			rowMapper = genRowMapper(tbl,tm);
 			tableToRowMapper.put(tbl.getSimpleName(), rowMapper);
 		}else {
 			rowMapper = tableToRowMapper.get(tbl.getSimpleName());	
@@ -500,11 +457,8 @@ public class DaoHelper {
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
 		RowMapper<E> rowMapper = null;
 		String mapperKey = tbl.getSimpleName();
-		if(tpl != null && !tpl.columns().isEmpty()) {
-			mapperKey += String.join("-", tpl.columns());
-		}
 		if(!tableToRowMapper.containsKey(mapperKey)) {
-			rowMapper = genRowMapper(tbl,tm,tpl);
+			rowMapper = genRowMapper(tbl,tm);
 			tableToRowMapper.put(mapperKey, rowMapper);
 		}else {
 			rowMapper = tableToRowMapper.get(mapperKey);	
@@ -555,7 +509,7 @@ public class DaoHelper {
 		jdbcTemplate.query(sql.toString(), args.toArray(new Object[0]), new RowCallbackHandler() {
 			@Override
 			public void processRow(ResultSet rs) throws SQLException {
-				E row = createBy(tbl, tm, tpl,rs);
+				E row = createBy(tbl, tm,rs);
 				consumer.accept(row);
 			}
 		});
@@ -571,7 +525,7 @@ public class DaoHelper {
 		}
 		RowMapper<E> rowMapper = null;
 		if(!tableToRowMapper.containsKey(tbl.getSimpleName())) {
-			rowMapper = genRowMapper(tbl,tm,null);
+			rowMapper = genRowMapper(tbl,tm);
 			tableToRowMapper.put(tbl.getSimpleName(), rowMapper);
 		}else {
 			rowMapper = tableToRowMapper.get(tbl.getSimpleName());	

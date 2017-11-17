@@ -209,8 +209,6 @@ public class TableMeta {
 		List<ConstraintMeta> addForeignKeys = new ArrayList<>();
 		for(ColumnMeta ocm:otherColumn) {
 			ColumnMeta cm = nameToColumnMeta.get(ocm.name);
-			System.err.println(" cm:" + OOUtils.toJSON(cm));
-			System.err.println("ocm:" + OOUtils.toJSON(ocm));
 			if(cm == null) {				
 				newColumns.add(ocm);
 			}else {
