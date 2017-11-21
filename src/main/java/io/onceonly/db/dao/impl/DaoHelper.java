@@ -7,8 +7,10 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.function.Consumer;
 
 import org.springframework.dao.DataAccessException;
@@ -24,6 +26,7 @@ import io.onceonly.db.dao.Page;
 import io.onceonly.db.dao.tpl.SelectTpl;
 import io.onceonly.db.dao.tpl.UpdateTpl;
 import io.onceonly.db.meta.ColumnMeta;
+import io.onceonly.db.meta.DDEngine;
 import io.onceonly.db.meta.DDMeta;
 import io.onceonly.db.meta.TableMeta;
 import io.onceonly.db.tbl.OOEntity;
@@ -431,6 +434,7 @@ public class DaoHelper {
 		return jdbcTemplate.queryForObject(sql, Long.class);
 	}
 
+	//TODO VIEW
 	public <E extends OOEntity<?>> long count(Class<E> tbl, Cnd<E> cnd) {
 		if (cnd == null) return 0;
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
@@ -444,6 +448,7 @@ public class DaoHelper {
 			String sql = String.format("SELECT COUNT(1) FROM %s %s;", tm.getTable(), afterWhere);
 			return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
 		}
+		
 		
 	}
 
@@ -463,7 +468,7 @@ public class DaoHelper {
 			rowMapper = tableToRowMapper.get(mapperKey);	
 		}
 		Page<E> page = new Page<E>();
-		if(cnd.getPage() == null ||cnd.getPage() <= 0) {
+		if(cnd.getPage() == null || cnd.getPage() <= 0) {
 			page.setPage(cnd.getPage());
 			if(cnd.getPage() == null || cnd.getPage() == 0) {
 				cnd.setPage(1);
@@ -481,18 +486,35 @@ public class DaoHelper {
 			page.setPageSize(OOConfig.PAGE_SIZE_MAX);
 		}
 		if(page.getTotal() == null || page.getTotal() > 0) {
-			List<Object> args = new ArrayList<>();
-			String sql = cnd.pageSql(tm,tpl,args);
-			List<E> data = jdbcTemplate.query(sql,args.toArray(new Object[0]), rowMapper);
-			page.setData(data);
+			if(tm.getEngine() == null) {
+				List<Object> args = new ArrayList<>();
+				String sql = cnd.pageSql(tm,tpl,args);
+				List<E> data = jdbcTemplate.query(sql,args.toArray(new Object[0]), rowMapper);
+				page.setData(data);
+			}else {
+				page.setData(findView(tm,tpl,cnd));
+			}
 		}
 		return page;
+	}
+	//TODO VIEW
+	private <E extends OOEntity<?>> List<E> findView(TableMeta tm,SelectTpl<E>tpl,Cnd<E>cnd) {
+		DDEngine dde = tm.getEngine();
+		if(dde != null) {
+			String mainTable = null;
+			Set<String> selectedCols = new HashSet<>();
+			selectedCols.addAll(tpl.columns());
+			Set<String> params = new HashSet<>();
+			
+			dde.deduceDependByParams(mainTable, params);
+		}
+		return null;
 	}
 
 	public <E extends OOEntity<?>> E fetch(Class<E> tbl,SelectTpl<E> tpl,Cnd<E> cnd) {
 		cnd.setPage(1);
 		Page<E> page = find(tbl,tpl,cnd);
-		if(page.getData().size() == 1) {
+		if(page.getData().size() > 0) {
 			return page.getData().get(0);
 		}
 		return null;

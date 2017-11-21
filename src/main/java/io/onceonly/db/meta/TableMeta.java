@@ -93,6 +93,9 @@ public class TableMeta {
 		}
 	}
 	
+	public DDEngine getEngine() {
+		return engine;
+	}
 	public void freshNameToField() {
 		try {
 			Class<?> tblEntity = this.getClass().getClassLoader().loadClass(entity);
