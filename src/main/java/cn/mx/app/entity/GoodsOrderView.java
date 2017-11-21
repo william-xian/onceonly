@@ -1,13 +1,13 @@
 package cn.mx.app.entity;
 
+import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.TblView;
-import io.onceonly.db.annotation.VCol;
 
 @TblView
 public class GoodsOrderView extends GoodsOrder{
-	@VCol(ref="name",refBy="userId")
+	@Col(refBy="userId-UserChief.name")
 	private String userName;
-	@VCol(ref="name",refBy="goodsId")
+	@Col(refBy="goodsId-Goods.name")
 	private String goodsName;
 	public String getUserName() {
 		return userName;

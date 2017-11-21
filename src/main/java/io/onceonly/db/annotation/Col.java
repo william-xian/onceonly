@@ -60,5 +60,7 @@ public @interface Col {
      * 注意枚举中的表都会被连接
      */
     Class<?>[] refEnum() default {};
-
+    
+    /** 引用路径  */
+	String refBy() default "";
 }

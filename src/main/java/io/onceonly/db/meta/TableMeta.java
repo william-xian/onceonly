@@ -15,6 +15,7 @@ import io.onceonly.db.annotation.Constraint;
 import io.onceonly.db.annotation.ConstraintType;
 import io.onceonly.db.annotation.OId;
 import io.onceonly.db.annotation.Tbl;
+import io.onceonly.db.annotation.TblView;
 import io.onceonly.util.OOAssert;
 import io.onceonly.util.OOLog;
 import io.onceonly.util.OOReflectUtil;
@@ -29,6 +30,7 @@ public class TableMeta {
 	List<ConstraintMeta> constraints;
 	List<ColumnMeta> columnMetas = new ArrayList<>(0);
 	transient Map<String,ColumnMeta> nameToColumnMeta = new HashMap<>();
+	transient DDEngine engine;
 	public String getTable() {
 		return table;
 	}
@@ -175,19 +177,21 @@ public class TableMeta {
 	/** drop table if exists tbl_a;*/
 	public List<String> createTableSql() {
 		List<String> sqls = new ArrayList<>();
-		StringBuffer tbl = new StringBuffer();
-		tbl.append(String.format("CREATE TABLE %s (", table));
-		for(ColumnMeta cm:columnMetas) {
-			tbl.append(String.format("%s %s%s,", cm.name,cm.type, cm.nullable?"":" not null"));
+		if(engine == null) {
+			StringBuffer tbl = new StringBuffer();
+			tbl.append(String.format("CREATE TABLE %s (", table));
+			for(ColumnMeta cm:columnMetas) {
+				tbl.append(String.format("%s %s%s,", cm.name,cm.type, cm.nullable?"":" not null"));
+			}
+			tbl.delete(tbl.length()-1, tbl.length());
+			tbl.append(");");
+			sqls.add(tbl.toString());
+			if(primaryKey != null) {
+				sqls.add(primaryKey.addSql());
+			}
+			/** 添加复合约束 */
+			sqls.addAll(ConstraintMeta.addConstraintSql(fieldConstraint));
 		}
-		tbl.delete(tbl.length()-1, tbl.length());
-		tbl.append(");");
-		sqls.add(tbl.toString());
-		if(primaryKey != null) {
-			sqls.add(primaryKey.addSql());
-		}
-		/** 添加复合约束 */
-		sqls.addAll(ConstraintMeta.addConstraintSql(fieldConstraint));
 		return sqls;
 	}
 
@@ -283,23 +287,23 @@ public class TableMeta {
 		return sqls;
 	}
 	public static TableMeta createBy(Class<?> entity) {
-		Tbl tbl = entity.getAnnotation(Tbl.class);
-		if(tbl == null) {
-			return null;
-		}
 		TableMeta tm = new TableMeta();
 		tm.table = entity.getSimpleName();
 		tm.entity = entity.getName();
-		List<ConstraintMeta> constraints =  new ArrayList<>();
-		for(Constraint c:tbl.constraints()) {
-			ConstraintMeta cm = new ConstraintMeta();
-			constraints.add(cm);
-			cm.setColumns(Arrays.asList(c.colNames()));
-			cm.setTable(tm.getTable());
-			cm.setType(c.type());
-			cm.setUsing(c.using());
+		Tbl tbl = entity.getAnnotation(Tbl.class);
+		TblView tblView = entity.getAnnotation(TblView.class);
+		if(tbl != null) {
+			List<ConstraintMeta> constraints =  new ArrayList<>();
+			for(Constraint c:tbl.constraints()) {
+				ConstraintMeta cm = new ConstraintMeta();
+				constraints.add(cm);
+				cm.setColumns(Arrays.asList(c.colNames()));
+				cm.setTable(tm.getTable());
+				cm.setType(c.type());
+				cm.setUsing(c.using());
+			}
+			tm.setConstraints(constraints);
 		}
-		tm.setConstraints(constraints);
 		List<ColumnMeta> columnMetas = new ArrayList<>();
 		List<String> primaryKeys = new ArrayList<>();
 		List<Class<?>> classes = new ArrayList<>();
@@ -354,6 +358,48 @@ public class TableMeta {
 		tm.setPrimaryKey(primaryKeys.get(0));
 		tm.freshNameToField();
 		tm.freshConstraintMetaTable();
+		if(tblView != null && classes.size() >=3) {
+			if(classes.size() >=3 ){
+				String mainClazz = classes.get(1).getSimpleName();
+				DDEngine dde = new DDEngine();
+				tm.engine = dde;
+				Map<String,List<String>> pathToColumns = new HashMap<>();
+				for(ColumnMeta cm:tm.getColumnMetas())
+				{
+					Col col = cm.getField().getAnnotation(Col.class);
+					String pathName = col.refBy();
+					int sp = pathName.lastIndexOf('.');
+					String path = null;
+					String name = null;
+					if(sp >=0) {
+						path = mainClazz+"."+pathName.substring(0, sp);
+						name = pathName.substring(sp+1);
+					}else if(pathName.equals("")){
+						path= mainClazz;
+						name="";
+					}else {
+						OOAssert.warnning("不合法的引用", path);
+					}
+					List<String> vals = pathToColumns.get(path);
+					if(vals == null) {
+						vals = new ArrayList<>();
+						pathToColumns.put(path, vals);
+					}
+					if(path.equals("")) {	
+						vals.add(cm.getName());
+					}else {
+						vals.add(name + " " + cm.getName());
+					}
+				}
+				for(String path:pathToColumns.keySet()) {
+					dde.append(String.format("%s{%s}", String.join(",",pathToColumns.get(path))));	
+				}
+				dde.build();
+			}else {
+				OOAssert.warnning("Tbl必须继承一个Tbl", tm.getEntity());
+				return null;
+			}
+		}
 		return tm;
 	}
 	/**  

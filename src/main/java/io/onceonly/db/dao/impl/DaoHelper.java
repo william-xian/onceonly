@@ -131,7 +131,7 @@ public class DaoHelper {
 	}
 
 	private void save(OOTableMeta ootm,String name,String val) {
-		if(ootm==null) {
+		if(ootm == null) {
 			ootm = new OOTableMeta();
 			ootm.setId(idGenerator.next(OOTableMeta.class));
 			ootm.setName(name);
@@ -444,7 +444,6 @@ public class DaoHelper {
 			String sql = String.format("SELECT COUNT(1) FROM %s %s;", tm.getTable(), afterWhere);
 			return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
 		}
-		
 		
 	}
 
