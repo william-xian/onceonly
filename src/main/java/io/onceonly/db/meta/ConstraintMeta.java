@@ -85,7 +85,7 @@ public class ConstraintMeta {
 			def = String.format("PRIMARY KEY (%s)", String.join(",", columns));
 			break;
 		case FOREGIN_KEY:
-			def = String.format("FOREIGN KEY (%s) REFERENCES %s(%s)", String.join(",", columns),refTable,String.join(",", columns));
+			def = String.format("FOREIGN KEY (%s) REFERENCES %s(%s)", String.join(",", columns),refTable,"id");
 			break;
 		case UNIQUE:
 			def = String.format("UNIQUE (%s)",String.join("_", columns));

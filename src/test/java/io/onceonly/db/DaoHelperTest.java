@@ -8,6 +8,7 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import cn.mx.app.entity.GoodsOrderView;
 import cn.mx.app.entity.UserChief;
 import io.onceonly.db.dao.Cnd;
 import io.onceonly.db.dao.Page;
@@ -180,7 +181,7 @@ public class DaoHelperTest extends DaoBaseTest{
 		
 	}
 	
-	@Test
+	//@Test
 	public void having_group_orderby() {
 		List<UserChief> ucs = new ArrayList<>();
 		List<Long> ids = new ArrayList<>();
@@ -230,4 +231,13 @@ public class DaoHelperTest extends DaoBaseTest{
 		daoHelper.remove(UserChief.class, ids);
 		daoHelper.delete(UserChief.class, ids);
 	}
+	
+	@Test
+	public void findView() {
+		Cnd<GoodsOrderView> cnd = new Cnd<>(GoodsOrderView.class);
+		
+		Page<GoodsOrderView> page = daoHelper.find(GoodsOrderView.class,cnd);
+		System.out.println(page);
+	}
+	
 }

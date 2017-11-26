@@ -53,8 +53,6 @@ public @interface Col {
     Class<?> ref() default void.class;
     /** depends on ref  */
     boolean useFK() default true;
-    /** depends on ref，该字段要与ref对应表的字段同步  */
-    String refField() default "";
     /** 
      * 引用的ID可能来源某个 表。
      * 注意枚举中的表都会被连接

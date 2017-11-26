@@ -237,7 +237,7 @@ public class DDEngine {
 		spd.setDependNamePaths(dependNamePaths);
 		spd.setSupplements(supplements);
 		spd.setSupplementNamePaths(supplementNamePaths);
-		spd.setNamePathToMeta(namePathToMeta);;
+		spd.setNamePathToMeta(namePathToMeta);
 		return spd;
 	}
 	/** 
@@ -273,7 +273,7 @@ public class DDEngine {
 		Set<DDMeta> depends = data.getDepends();
 		List<String> dnps = data.getDependNamePaths();
 		depends.add(mainMeta);
-		StringBuffer sql = new StringBuffer("select ");
+		StringBuffer sql = new StringBuffer("SELECT ");
 		for(DDMeta meta:depends) {
 			Map<String,String> c2o = meta.getColumnToOrigin();
 			for(String column:c2o.keySet()) {
@@ -282,7 +282,7 @@ public class DDEngine {
 		}
 		//删除最后两个字符：逗号空格
 		sql.delete(sql.length()-2, sql.length());
-		sql.append(String.format("\nfrom %s %s", mainMeta.getTable(), mainMeta.getName()));
+		sql.append(String.format("\nFROM %s %s", mainMeta.getTable(), mainMeta.getName()));
 		if(dnps != null && !dnps.isEmpty()) {
 			Set<String> spoor = new HashSet<>();
 			spoor.add(mainMeta.getName());
@@ -296,7 +296,7 @@ public class DDEngine {
 					spoor.add(meta.getName());
 					DDMeta dependMeta  = aliasToMeta.get(depend);
 					String rel = relMap.get(meta.getName()).get(dependMeta.getName());
-					sql.append(String.format("\nleft join %s %s on %s", meta.getTable(),meta.getName(),rel));
+					sql.append(String.format("\nLEFT JOIN %s %s on %s", meta.getTable(),meta.getName(),rel));
 					depend = deps[i];
 				}
 				

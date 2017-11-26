@@ -8,7 +8,6 @@ public class ColumnMeta {
 	boolean nullable;
 	boolean unique;
 	String refTable;
-	String refField;
 	boolean useFK;
 	String using;
 	boolean primaryKey;
@@ -47,12 +46,6 @@ public class ColumnMeta {
 	}
 	public void setRefTable(String refTable) {
 		this.refTable = refTable;
-	}
-	public String getRefField() {
-		return refField;
-	}
-	public void setRefField(String refField) {
-		this.refField = refField;
 	}
 	public boolean isUseFK() {
 		return useFK;

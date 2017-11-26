@@ -28,6 +28,7 @@ import io.onceonly.db.dao.tpl.UpdateTpl;
 import io.onceonly.db.meta.ColumnMeta;
 import io.onceonly.db.meta.DDEngine;
 import io.onceonly.db.meta.DDMeta;
+import io.onceonly.db.meta.SqlParamData;
 import io.onceonly.db.meta.TableMeta;
 import io.onceonly.db.tbl.OOEntity;
 import io.onceonly.db.tbl.OOTableMeta;
@@ -55,6 +56,7 @@ public class DaoHelper {
 		this.idGenerator = idGenerator;
 		this.tableToTableMeta = new HashMap<>();
 		TableMeta tm = TableMeta.createBy(OOTableMeta.class);
+		
 		tableToTableMeta.put(tm.getTable(), tm);
 		try {
 			this.count(OOTableMeta.class);
@@ -152,11 +154,11 @@ public class DaoHelper {
 		if(old == null) {
 			old = TableMeta.createBy(tbl);
 			List<String> sqls = old.createTableSql();
-			if(!sqls.isEmpty()) {
-				jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));	
-			}
 			tableToTableMeta.put(old.getTable(), old);
-			this.save(null, old.getTable(), OOUtils.toJSON(old));
+			if(!sqls.isEmpty()) {
+				jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));
+				save(null, old.getTable(), OOUtils.toJSON(old));
+			}
 			return true;
 		}else {
 			TableMeta tm = TableMeta.createBy(tbl);
@@ -164,13 +166,13 @@ public class DaoHelper {
 				return false;
 			} else {
 				List<String> sqls = old.upgradeTo(tm);
+				tableToTableMeta.put(tm.getTable(), tm);
 				if(!sqls.isEmpty()){
 					jdbcTemplate.batchUpdate(sqls.toArray(new String[0]));
-					tableToTableMeta.put(tm.getTable(), tm);
 					Cnd<OOTableMeta> cnd = new Cnd<>(OOTableMeta.class);
 					cnd.eq().setName(tbl.getSimpleName());
 					OOTableMeta ootm = this.fetch(OOTableMeta.class, null, cnd);
-					this.save(ootm, tm.getTable(), OOUtils.toJSON(tm));
+					save(ootm, tm.getTable(), OOUtils.toJSON(tm));
 				}
 				return true;
 			}
@@ -433,23 +435,34 @@ public class DaoHelper {
 		String sql = String.format("SELECT COUNT(1) FROM %s;", tm.getTable());
 		return jdbcTemplate.queryForObject(sql, Long.class);
 	}
-
-	//TODO VIEW
+	
 	public <E extends OOEntity<?>> long count(Class<E> tbl, Cnd<E> cnd) {
 		if (cnd == null) return 0;
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
-		
-		List<Object> sqlArgs = new ArrayList<>();
-		String afterWhere = cnd.afterWhere(sqlArgs);
-		if(cnd.group() != null && !cnd.group().equals("")) {
-			String sql = String.format("SELECT COUNT(1) FROM (SELECT 1 FROM %s %s) t;", tm.getTable(), afterWhere);
-			return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
+		if(tm.getEngine() == null) {
+			List<Object> sqlArgs = new ArrayList<>();
+			String afterWhere = cnd.afterWhere(sqlArgs);
+			if(cnd.group() != null && !cnd.group().equals("")) {
+				String sql = String.format("SELECT COUNT(1) FROM (SELECT 1 FROM %s %s) t;", tm.getTable(), afterWhere);
+				return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
+			}else {
+				String sql = String.format("SELECT COUNT(1) FROM %s %s;", tm.getTable(), afterWhere);
+				return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
+			}	
 		}else {
-			String sql = String.format("SELECT COUNT(1) FROM %s %s;", tm.getTable(), afterWhere);
-			return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
+			DDEngine dde = tm.getEngine();
+			String s = dde.aliasToMeta.keySet().iterator().next();
+			DDMeta main = dde.aliasToMeta.get(s);
+			SqlParamData  spd = dde.deduceDependByParams(main.getTable(), dde.columnToMeta.keySet());
+			dde.generateSql(spd);
+			List<Object> sqlArgs = new ArrayList<>();
+			//TODO VIEW cnd
+			cnd.afterWhere(sqlArgs);
+			int fromIndex = spd.getSql().indexOf("FROM");
+			String sql = String.format("SELECT COUNT(1) FROM (select 1 %s) t;", spd.getSql().substring(fromIndex));
+			System.out.println(sql);
+			return jdbcTemplate.queryForObject(sql,new Object[0],Long.class);
 		}
-		
-		
 	}
 
 	public <E extends OOEntity<?>> Page<E> find(Class<E> tbl,Cnd<E> cnd) {

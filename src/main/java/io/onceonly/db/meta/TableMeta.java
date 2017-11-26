@@ -233,7 +233,7 @@ public class TableMeta {
 					cnstMeta.setColumns(Arrays.asList(cm.getName()));
 					cnstMeta.setTable(table);
 					cnstMeta.setType(ConstraintType.FOREGIN_KEY);
-					cnstMeta.setRefTable(cm.getRefField());
+					cnstMeta.setRefTable(cm.getRefTable());
 					cnstMeta.setUsing(cm.getUsing());
 					dropForeignKeys.add(cnstMeta);
 				}
@@ -246,7 +246,7 @@ public class TableMeta {
 						cnstMeta.setColumns(Arrays.asList(cm.getName()));
 						cnstMeta.setTable(table);
 						cnstMeta.setType(ConstraintType.FOREGIN_KEY);
-						cnstMeta.setRefTable(cm.getRefField());
+						cnstMeta.setRefTable(cm.getRefTable());
 						cnstMeta.setUsing(cm.getUsing());
 						addForeignKeys.add(cnstMeta);
 					}
@@ -349,7 +349,6 @@ public class TableMeta {
 				if (col.ref() != void.class) {
 					cm.setUseFK(col.useFK());
 					cm.setRefTable(col.ref().getSimpleName());
-					cm.setRefField(col.refField());
 				}
 				columnMetas.add(cm);
 			}
@@ -395,7 +394,7 @@ public class TableMeta {
 					}
 				}
 				for(String path:pathToColumns.keySet()) {
-					dde.append(String.format("%s{%s}", String.join(",",pathToColumns.get(path))));	
+					dde.append(String.format("%s{%s}", path,String.join(",",pathToColumns.get(path))));	
 				}
 				dde.build();
 			}else {

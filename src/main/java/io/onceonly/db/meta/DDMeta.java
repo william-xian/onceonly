@@ -25,6 +25,12 @@ public class DDMeta {
 	}
 	public void setPath(String path) {
 		this.path = path;
+		int sp = path.lastIndexOf('-');
+		if(sp > 0) {
+			this.table = path.substring(sp);	
+		}else {
+			this.table = path;
+		}
 	}
 	public String getName() {
 		return name;
