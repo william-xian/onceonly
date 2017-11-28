@@ -200,17 +200,23 @@ public class Cnd<E> extends Tpl{
 	
 	public String afterWhere(List<Object> sqlArgs) {
 		StringBuffer afterWhere = new StringBuffer();
+		//TODO VIEW
 		String whereCnd = whereSql(sqlArgs);
 		if (!whereCnd.equals("")) {
 			afterWhere.append(String.format(" WHERE (%s)", whereCnd));
 		}
+		String group = group();
+		if(group != null && !group.isEmpty()) {
+			afterWhere.append(String.format(" GROUP BY %s", group));
+		}
+		//TODO VIEW
 		String having = getHaving();
 		if(having != null && !having.isEmpty()) {
 			afterWhere.append(String.format(" HAVING %s", having));
 		}
-		String group = group();
-		if(group != null && !group.isEmpty()) {
-			afterWhere.append(String.format(" GROUP BY %s", group));
+		String order = getOrder();
+		if(!order.isEmpty()) {
+			afterWhere.append(String.format(" ORDER BY %s", order));
 		}
 		return afterWhere.toString();
 	}
@@ -296,7 +302,7 @@ public class Cnd<E> extends Tpl{
 	}
 	public String getOrder() {
 		if(order != null) {
-			return order.toString();	
+			return order.getOrder();	
 		}else {
 			return "";
 		}

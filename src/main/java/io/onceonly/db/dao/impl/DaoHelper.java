@@ -433,8 +433,8 @@ public class DaoHelper {
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
 		List<Object> sqlArgs = new ArrayList<>();
 		String sql = cnd.countSql(tm, tpl, sqlArgs);
-		System.err.println("count:" + sql);
-		System.err.println("count:" + sqlArgs);
+		OOLog.debug(sql);
+		OOLog.debug(sqlArgs.toString());
 		return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
 	}
 
@@ -475,8 +475,8 @@ public class DaoHelper {
 			if(tm.getEngine() == null) {
 				List<Object> sqlArgs = new ArrayList<>();
 				String sql = cnd.pageSql(tm,tpl,sqlArgs);
-				System.err.println("find:" + sql);
-				System.err.println("find:" + sqlArgs);
+				OOLog.debug(sql);
+				OOLog.debug(sqlArgs.toString());
 				List<E> data = jdbcTemplate.query(sql,sqlArgs.toArray(new Object[0]), rowMapper);
 				page.setData(data);
 			}else {
