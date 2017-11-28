@@ -3,7 +3,9 @@ package io.onceonly.db.dao;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.assertj.core.internal.cglib.proxy.Enhancer;
 import org.assertj.core.internal.cglib.proxy.MethodInterceptor;
@@ -14,6 +16,9 @@ import io.onceonly.db.dao.tpl.HavingTpl;
 import io.onceonly.db.dao.tpl.OrderTpl;
 import io.onceonly.db.dao.tpl.SelectTpl;
 import io.onceonly.db.dao.tpl.Tpl;
+import io.onceonly.db.meta.ColumnMeta;
+import io.onceonly.db.meta.DDEngine;
+import io.onceonly.db.meta.SqlParamData;
 import io.onceonly.db.meta.TableMeta;
 import io.onceonly.util.OOLog;
 import io.onceonly.util.OOUtils;
@@ -212,16 +217,33 @@ public class Cnd<E> extends Tpl{
 	
 	public StringBuffer selectSql(TableMeta tm,SelectTpl<E> tpl) {
 		StringBuffer sqlSelect = new StringBuffer("SELECT");
-		if(tpl != null) {
-			if(tpl.sql() != null && !tpl.sql().isEmpty()) {
-				sqlSelect.append(" " + tpl.sql());		
+		if(tm.getEngine() == null) {
+			if(tpl != null) {
+				if(tpl.sql() != null && !tpl.sql().isEmpty()) {
+					sqlSelect.append(" " + tpl.sql());		
+				}else {
+					sqlSelect.append(" *");		
+				}
 			}else {
-				sqlSelect.append(" *");		
+				sqlSelect.append(" *");
 			}
+			sqlSelect.append(String.format(" FROM %s", tm.getTable()));
 		}else {
-			sqlSelect.append(" *");
+			DDEngine dde = tm.getEngine();
+			Set<String> params = new HashSet<>();
+			if(tpl != null) {
+				params.addAll(tpl.columns());	
+			}else {
+				for(ColumnMeta cm:tm.getColumnMetas()) {
+					params.add(cm.getName());
+				}
+			}
+			tm.getEntityName();
+			String mainPath = tm.getEntity().getSuperclass().getSimpleName();
+			SqlParamData spd = dde.deduceDependByParams(mainPath, params);
+			dde.generateSql(spd);
+			sqlSelect.append(spd.getSql());
 		}
-		sqlSelect.append(String.format(" FROM %s", tm.getTable()));
 		return sqlSelect;
 	}
 	public StringBuffer wholeSql(TableMeta tm,SelectTpl<E> tpl,List<Object> sqlArgs) {
@@ -240,10 +262,16 @@ public class Cnd<E> extends Tpl{
 	}
 	public String countSql(TableMeta tm,SelectTpl<E> tpl,List<Object> sqlArgs) {
 		String group = group();
-		if(group != null && !group.isEmpty()) {
-			return String.format("SELECT COUNT(1) FROM (SELECT 1 FROM %s %s) t", tm.getTable(), afterWhere(sqlArgs));
+		if(tm.getEngine() == null) {
+			if(group != null && !group.isEmpty()) {
+				return String.format("SELECT COUNT(1) FROM (SELECT 1 FROM %s %s) t", tm.getTable(), afterWhere(sqlArgs));
+			}else {
+				return String.format("SELECT COUNT(1) FROM %s %s", tm.getTable(), afterWhere(sqlArgs));
+			}	
 		}else {
-			return String.format("SELECT COUNT(1) FROM %s %s", tm.getTable(), afterWhere(sqlArgs));
+			StringBuffer select = selectSql(tm,tpl);
+			int fromIndex = select.indexOf("FROM");
+			return String.format("SELECT COUNT(1) FROM (SELECT 1 %s %s) t", select.substring(fromIndex), afterWhere(sqlArgs));
 		}
 	}
 	

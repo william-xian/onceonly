@@ -24,13 +24,14 @@ import io.onceonly.util.OOUtils;
 public class TableMeta {
 	String table;
 	String extend;
-	String entity;
+	String entityName;
 	ConstraintMeta primaryKey;
 	transient List<ConstraintMeta> fieldConstraint = new ArrayList<>(0);
 	List<ConstraintMeta> constraints;
 	List<ColumnMeta> columnMetas = new ArrayList<>(0);
 	transient Map<String,ColumnMeta> nameToColumnMeta = new HashMap<>();
 	transient DDEngine engine;
+	transient Class<?> entity;
 	public String getTable() {
 		return table;
 	}
@@ -38,11 +39,11 @@ public class TableMeta {
 		this.table = table;
 		freshConstraintMetaTable();
 	}
-	public String getEntity() {
-		return entity;
+	public String getEntityName() {
+		return entityName;
 	}
-	public void setEntity(String entity) {
-		this.entity = entity;
+	public void setEntityName(String entity) {
+		this.entityName = entity;
 	}
 	public String getExtend() {
 		return extend;
@@ -96,9 +97,14 @@ public class TableMeta {
 	public DDEngine getEngine() {
 		return engine;
 	}
+	
+	public Class<?> getEntity() {
+		return entity;
+	}
 	public void freshNameToField() {
 		try {
-			Class<?> tblEntity = this.getClass().getClassLoader().loadClass(entity);
+			Class<?> tblEntity = this.getClass().getClassLoader().loadClass(entityName);
+			entity = tblEntity;
 			List<Class<?>> classes = new ArrayList<>();
 			for(Class<?> clazz = tblEntity;!clazz.equals(Object.class);clazz=clazz.getSuperclass()) {
 				classes.add(0, clazz);
@@ -125,7 +131,7 @@ public class TableMeta {
 				OOLog.warnning("以下字段没有加载到Field %s", OOUtils.toJSON(missed));
 			}
 		} catch (ClassNotFoundException e) {
-			OOAssert.fatal("无法加载 %s", entity);
+			OOAssert.fatal("无法加载 %s", entityName);
 		}
 	}
 	public void freshConstraintMetaTable() {
@@ -292,7 +298,8 @@ public class TableMeta {
 	public static TableMeta createBy(Class<?> entity) {
 		TableMeta tm = new TableMeta();
 		tm.table = entity.getSimpleName();
-		tm.entity = entity.getName();
+		tm.entityName = entity.getName();
+		tm.entity = entity;
 		Tbl tbl = entity.getAnnotation(Tbl.class);
 		TblView tblView = entity.getAnnotation(TblView.class);
 		if(tbl != null) {
@@ -398,7 +405,7 @@ public class TableMeta {
 				}
 				dde.build();
 			}else {
-				OOAssert.warnning("Tbl必须继承一个Tbl", tm.getEntity());
+				OOAssert.warnning("Tbl必须继承一个Tbl", tm.getEntityName());
 				return null;
 			}
 		}
@@ -434,7 +441,7 @@ public class TableMeta {
 		int result = 1;
 		result = prime * result + ((columnMetas == null) ? 0 : columnMetas.hashCode());
 		result = prime * result + ((constraints == null) ? 0 : constraints.hashCode());
-		result = prime * result + ((entity == null) ? 0 : entity.hashCode());
+		result = prime * result + ((entityName == null) ? 0 : entityName.hashCode());
 		result = prime * result + ((extend == null) ? 0 : extend.hashCode());
 		result = prime * result + ((fieldConstraint == null) ? 0 : fieldConstraint.hashCode());
 		result = prime * result + ((primaryKey == null) ? 0 : primaryKey.hashCode());
@@ -460,10 +467,10 @@ public class TableMeta {
 				return false;
 		} else if (!constraints.equals(other.constraints))
 			return false;
-		if (entity == null) {
-			if (other.entity != null)
+		if (entityName == null) {
+			if (other.entityName != null)
 				return false;
-		} else if (!entity.equals(other.entity))
+		} else if (!entityName.equals(other.entityName))
 			return false;
 		if (extend == null) {
 			if (other.extend != null)

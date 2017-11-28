@@ -19,12 +19,13 @@ import io.onceonly.util.Tuple3;
  */
 public class DDEngine {
 	
+	/** 命名路径，实表 */
 	public Map<String,DDMeta> pathToMeta= new HashMap<>();
 	
-	/* ------------------------------------- */
+	/** 虚表名，实表 */
 	public Map<String,DDMeta> aliasToMeta= new HashMap<>();
 	/**
-	 * 虚表字段，表来源
+	 * 虚表字段，实表
 	 */
 	public Map<String,DDMeta> columnToMeta =  new HashMap<>();
 	/**
