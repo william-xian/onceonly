@@ -28,7 +28,6 @@ import io.onceonly.db.dao.tpl.UpdateTpl;
 import io.onceonly.db.meta.ColumnMeta;
 import io.onceonly.db.meta.DDEngine;
 import io.onceonly.db.meta.DDMeta;
-import io.onceonly.db.meta.SqlParamData;
 import io.onceonly.db.meta.TableMeta;
 import io.onceonly.db.tbl.OOEntity;
 import io.onceonly.db.tbl.OOTableMeta;
@@ -431,38 +430,21 @@ public class DaoHelper {
 
 
 	public <E extends OOEntity<?>> long count(Class<E> tbl) {
-		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
-		String sql = String.format("SELECT COUNT(1) FROM %s;", tm.getTable());
-		return jdbcTemplate.queryForObject(sql, Long.class);
+		return count(tbl,null,new Cnd<E>(tbl));
 	}
 	
 	public <E extends OOEntity<?>> long count(Class<E> tbl, Cnd<E> cnd) {
-		if (cnd == null) return 0;
+		return count(tbl,null,cnd);
+	}
+	
+	public <E extends OOEntity<?>> long count(Class<E> tbl, SelectTpl<E> tpl, Cnd<E> cnd) {
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
-		if(tm.getEngine() == null) {
-			List<Object> sqlArgs = new ArrayList<>();
-			String afterWhere = cnd.afterWhere(sqlArgs);
-			if(cnd.group() != null && !cnd.group().equals("")) {
-				String sql = String.format("SELECT COUNT(1) FROM (SELECT 1 FROM %s %s) t;", tm.getTable(), afterWhere);
-				return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
-			}else {
-				String sql = String.format("SELECT COUNT(1) FROM %s %s;", tm.getTable(), afterWhere);
-				return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
-			}	
-		}else {
-			DDEngine dde = tm.getEngine();
-			String s = dde.aliasToMeta.keySet().iterator().next();
-			DDMeta main = dde.aliasToMeta.get(s);
-			SqlParamData  spd = dde.deduceDependByParams(main.getTable(), dde.columnToMeta.keySet());
-			dde.generateSql(spd);
-			List<Object> sqlArgs = new ArrayList<>();
-			//TODO VIEW cnd
-			cnd.afterWhere(sqlArgs);
-			int fromIndex = spd.getSql().indexOf("FROM");
-			String sql = String.format("SELECT COUNT(1) FROM (select 1 %s) t;", spd.getSql().substring(fromIndex));
-			System.out.println(sql);
-			return jdbcTemplate.queryForObject(sql,new Object[0],Long.class);
-		}
+		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
+		List<Object> sqlArgs = new ArrayList<>();
+		String sql = cnd.countSql(tm, tpl, sqlArgs);
+		System.err.println("count:" + sql);
+		System.err.println("count:" + sqlArgs);
+		return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
 	}
 
 	public <E extends OOEntity<?>> Page<E> find(Class<E> tbl,Cnd<E> cnd) {
@@ -489,7 +471,7 @@ public class DaoHelper {
 			}else {
 				cnd.setPage(Math.abs(cnd.getPage()));
 			}
-			page.setTotal(count(tbl,cnd));
+			page.setTotal(count(tbl,tpl,cnd));
 		}
 		if(cnd.getPageSize() == null) {
 			cnd.setPageSize(OOConfig.PAGE_SIZE_DEFAULT);
@@ -500,9 +482,11 @@ public class DaoHelper {
 		}
 		if(page.getTotal() == null || page.getTotal() > 0) {
 			if(tm.getEngine() == null) {
-				List<Object> args = new ArrayList<>();
-				String sql = cnd.pageSql(tm,tpl,args);
-				List<E> data = jdbcTemplate.query(sql,args.toArray(new Object[0]), rowMapper);
+				List<Object> sqlArgs = new ArrayList<>();
+				String sql = cnd.pageSql(tm,tpl,sqlArgs);
+				System.err.println("find:" + sql);
+				System.err.println("find:" + sqlArgs);
+				List<E> data = jdbcTemplate.query(sql,sqlArgs.toArray(new Object[0]), rowMapper);
 				page.setData(data);
 			}else {
 				page.setData(findView(tm,tpl,cnd));
@@ -525,7 +509,11 @@ public class DaoHelper {
 	}
 
 	public <E extends OOEntity<?>> E fetch(Class<E> tbl,SelectTpl<E> tpl,Cnd<E> cnd) {
+		if(cnd == null) {
+			cnd = new Cnd<E>(tbl);
+		}
 		cnd.setPage(1);
+		cnd.setPageSize(1);
 		Page<E> page = find(tbl,tpl,cnd);
 		if(page.getData().size() > 0) {
 			return page.getData().get(0);

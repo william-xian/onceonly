@@ -161,7 +161,7 @@ public class Cnd<E> extends Tpl{
 			self.append("("+selfSql+")");
 		}
 		sqlArgs.addAll(args);
-		for(int i =0; i < this.extLogics.size(); i++) {
+		for(int i = 0; i < this.extLogics.size(); i++) {
 			String sl = this.extLogics.get(i);
 			Cnd<E> c = extCnds.get(i);
 			String other = c.whereSql(sqlArgs);
@@ -221,7 +221,7 @@ public class Cnd<E> extends Tpl{
 			sqlSelect.append(" *");
 		}
 		sqlSelect.append(String.format(" FROM %s", tm.getTable()));
-		afterWhere(sqlArgs);
+		sqlSelect.append(afterWhere(sqlArgs));
 		return sqlSelect;
 	}
 	
@@ -232,6 +232,14 @@ public class Cnd<E> extends Tpl{
 		sqlArgs.addAll(Arrays.asList(getPageSize(),(getPage()-1)*getPageSize()));
 		return s.toString();
 	}
+	public String countSql(TableMeta tm,SelectTpl<E> tpl,List<Object> sqlArgs) {
+		String group = group();
+		if(group != null && !group.isEmpty()) {
+			return String.format("SELECT COUNT(1) FROM (SELECT 1 FROM %s %s) t", tm.getTable(), afterWhere(sqlArgs));
+		}else {
+			return String.format("SELECT COUNT(1) FROM %s %s", tm.getTable(), afterWhere(sqlArgs));
+		}
+	}
 	
 	public HavingTpl<E> having() {
 		if(having == null) {
@@ -240,7 +248,7 @@ public class Cnd<E> extends Tpl{
 		return having;
 	}
 	public String getHaving() {
-		if(having!=null) {
+		if(having != null) {
 			return having.sql();
 		}else {
 			return null;

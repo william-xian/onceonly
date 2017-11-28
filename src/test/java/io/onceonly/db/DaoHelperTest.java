@@ -54,7 +54,8 @@ public class DaoHelperTest extends DaoBaseTest{
 		daoHelper.insert(uc);
 		Assert.assertEquals(11, daoHelper.count(UserChief.class));
 		UserChief db = daoHelper.get(UserChief.class, uc.getId());
-		Assert.assertNotEquals(db.toString(), uc.toString());
+		
+		Assert.assertEquals(db.toString(), uc.toString());
 		int deleted1 = daoHelper.delete(UserChief.class, uc.getId());
 		Assert.assertEquals(0, deleted1);
 		Assert.assertEquals(11, daoHelper.count(UserChief.class));
@@ -171,6 +172,7 @@ public class DaoHelperTest extends DaoBaseTest{
 		/** (genre=2 or genre != 3) and not (avatar like 'avatar%00')*/
 		cnd4.and(cnd1).not(cnd3);
 		Assert.assertEquals(6, daoHelper.count(UserChief.class, cnd4));
+		
 		cnd4.setPage(-2);
 		cnd4.setPageSize(4);
 		Page<UserChief> page1 = daoHelper.find(UserChief.class, cnd4);
@@ -207,26 +209,24 @@ public class DaoHelperTest extends DaoBaseTest{
 		
 		SelectTpl<UserChief> max = new SelectTpl<UserChief>(UserChief.class);
 		max.max().setGenre(SelectTpl.USING_INT);
-		UserChief ucMax = daoHelper.fetch(UserChief.class,max,cnd);
+		UserChief ucMax = daoHelper.fetch(UserChief.class,max,null);
 		Assert.assertEquals(ucMax.getGenre(), new Integer(3));
 		
 		SelectTpl<UserChief> min = new SelectTpl<UserChief>(UserChief.class);
 		min.min().setGenre(SelectTpl.USING_INT);
-		UserChief ucMin = daoHelper.fetch(UserChief.class,min,cnd);
+		UserChief ucMin = daoHelper.fetch(UserChief.class,min,null);
 		Assert.assertEquals(ucMin.getGenre(), new Integer(0));
 		
 		
 		SelectTpl<UserChief> sum = new SelectTpl<UserChief>(UserChief.class);
 		sum.sum().setGenre(SelectTpl.USING_INT);
-		UserChief ucSum = daoHelper.fetch(UserChief.class,sum,cnd);
+		UserChief ucSum = daoHelper.fetch(UserChief.class,sum,null);
 		Assert.assertEquals(ucSum.getExtra().get("sum_genre"), new Long(13));
 		
-
 		SelectTpl<UserChief> avg = new SelectTpl<UserChief>(UserChief.class);
 		avg.avg().setGenre(SelectTpl.USING_INT);
-		UserChief ucAvg = daoHelper.fetch(UserChief.class,avg,cnd);
+		UserChief ucAvg = daoHelper.fetch(UserChief.class,avg,null);
 		System.out.println(ucAvg);
-	
 		
 		daoHelper.remove(UserChief.class, ids);
 		daoHelper.delete(UserChief.class, ids);
