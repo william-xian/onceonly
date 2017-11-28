@@ -235,23 +235,14 @@ public class DaoHelper {
 		return row;
 	}
 	
-	@SuppressWarnings("unchecked")
-	public <E extends OOEntity<?>,ID> E get(Class<E> tbl,ID id) {
-		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
-		if(tm == null) {
-			return null;
-		}
-		RowMapper<E> rowMapper = null;
-		if(!tableToRowMapper.containsKey(tbl.getSimpleName())) {
-			rowMapper = genRowMapper(tbl,tm);
-			tableToRowMapper.put(tbl.getSimpleName(), rowMapper);
-		}else {
-			rowMapper = tableToRowMapper.get(tbl.getSimpleName());	
-		}
-		String sql = String.format("SELECT * FROM %s WHERE id = ?", tm.getTable());
-		List<E> values = jdbcTemplate.query(sql, new Object[]{id}, rowMapper);
-		if(values.size() == 1){
-			return values.get(0);
+	public <E extends OOEntity<ID>,ID> E get(Class<E> tbl,ID id) {
+		Cnd<E> cnd = new Cnd<E>(tbl);
+		cnd.setPage(1);
+		cnd.setPageSize(1);
+		cnd.eq().setId(id);
+		Page<E> page = find(tbl,null,cnd);
+		if(page.getData().size() == 1) {
+			return page.getData().get(0);
 		}
 		return null;
 	}
@@ -347,7 +338,7 @@ public class DaoHelper {
 		return update(entity,true);	
 	}
 	
-	public <E extends OOEntity<?>> int updateByTpl(Class<E> tbl, UpdateTpl<E> tpl) {
+	public <E extends OOEntity<ID>,ID> int updateByTpl(Class<E> tbl, UpdateTpl<E,ID> tpl) {
 		OOAssert.warnning(tpl.getId() != null && tpl != null,"Are you sure to update a null value?");
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
@@ -359,7 +350,7 @@ public class DaoHelper {
 		return jdbcTemplate.update(sql, vals.toArray());
 	}
 	
-	public <E extends OOEntity<?>> int updateByTplCnd(Class<E> tbl,UpdateTpl<E> tpl,Cnd<E> cnd) {
+	public <E extends OOEntity<ID>,ID> int updateByTplCnd(Class<E> tbl,UpdateTpl<E,ID> tpl,Cnd<E> cnd) {
 		OOAssert.warnning(tpl != null,"Are you sure to update a null value?");
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
@@ -442,8 +433,6 @@ public class DaoHelper {
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
 		List<Object> sqlArgs = new ArrayList<>();
 		String sql = cnd.countSql(tm, tpl, sqlArgs);
-		System.err.println("count:" + sql);
-		System.err.println("count:" + sqlArgs);
 		return jdbcTemplate.queryForObject(sql,sqlArgs.toArray(new Object[0]), Long.class);
 	}
 
@@ -494,17 +483,15 @@ public class DaoHelper {
 		}
 		return page;
 	}
+	
 	//TODO VIEW
 	private <E extends OOEntity<?>> List<E> findView(TableMeta tm,SelectTpl<E>tpl,Cnd<E>cnd) {
 		DDEngine dde = tm.getEngine();
-		if(dde != null) {
-			String mainTable = null;
-			Set<String> selectedCols = new HashSet<>();
-			selectedCols.addAll(tpl.columns());
-			Set<String> params = new HashSet<>();
-			
-			dde.deduceDependByParams(mainTable, params);
-		}
+		String mainTable = null;
+		Set<String> selectedCols = new HashSet<>();
+		selectedCols.addAll(tpl.columns());
+		Set<String> params = new HashSet<>();
+		dde.deduceDependByParams(mainTable, params);
 		return null;
 	}
 
@@ -536,26 +523,17 @@ public class DaoHelper {
 			}
 		});
 	}
-
-	@SuppressWarnings("unchecked")
-	public <E extends OOEntity<?>,ID> List<E> findByIds(Class<E> tbl, List<ID> ids) {
-		if(ids.isEmpty()) {
+	
+	public <E extends OOEntity<ID>,ID> List<E> findByIds(Class<E> tbl, List<ID> ids) {
+		if(ids == null || ids.isEmpty()) {
 			return new ArrayList<E>();
 		}
-		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
-		if(tm == null) {
-		}
-		RowMapper<E> rowMapper = null;
-		if(!tableToRowMapper.containsKey(tbl.getSimpleName())) {
-			rowMapper = genRowMapper(tbl,tm);
-			tableToRowMapper.put(tbl.getSimpleName(), rowMapper);
-		}else {
-			rowMapper = tableToRowMapper.get(tbl.getSimpleName());	
-		}
-		String stub = OOUtils.genStub("?",",",ids.size());
-		String sql = String.format("SELECT * FROM %s WHERE %s in (%s)", tm.getTable(),tm.getPrimaryKey(),stub);
-		List<E> values = jdbcTemplate.query(sql, ids.toArray(), rowMapper);
-		return values;
+		Cnd<E> cnd = new Cnd<E>(tbl);
+		cnd.setPage(1);
+		cnd.setPageSize(ids.size());
+		cnd.in(ids.toArray(new Object[0])).setId(null);
+		Page<E> page = find(tbl,null,cnd);
+		return page.getData();
 	}
 }
 

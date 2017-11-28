@@ -8,11 +8,11 @@ import org.assertj.core.internal.cglib.proxy.Enhancer;
 import org.assertj.core.internal.cglib.proxy.MethodInterceptor;
 import org.assertj.core.internal.cglib.proxy.MethodProxy;
 
-public class UpdateTpl<T> extends Tpl{
+public class UpdateTpl<T,ID> extends Tpl{
 	private StringBuffer sql = new StringBuffer();
 	private T tpl;
 	private String strOpt;
-	private Object id;
+	private ID id;
 	private List<Object> args =  new ArrayList<>();
 	@SuppressWarnings("unchecked")
 	public UpdateTpl(Class<T> tplClass) {
@@ -23,11 +23,11 @@ public class UpdateTpl<T> extends Tpl{
         tpl = (T)enhancer.create(); 
 	}
 	
-	public void setId(Object id) {
+	public void setId(ID id) {
 		this.id = id;
 	}
 
-	public Object getId() {
+	public ID getId() {
 		return id;
 	}
 	public T add() {

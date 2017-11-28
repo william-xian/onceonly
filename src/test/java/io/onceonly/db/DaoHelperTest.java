@@ -134,7 +134,7 @@ public class DaoHelperTest extends DaoBaseTest{
 		daoHelper.insert(ucs);
 		UserChief uc1 = ucs.get(0);
 		UserChief uc2 = ucs.get(1);
-		UpdateTpl<UserChief> tpl = new UpdateTpl<>(UserChief.class);
+		UpdateTpl<UserChief,Long> tpl = new UpdateTpl<>(UserChief.class);
 		tpl.setId(uc1.getId());
 		tpl.add().setGenre(1);
 		daoHelper.updateByTpl(UserChief.class,tpl);

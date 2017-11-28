@@ -155,6 +155,7 @@ public class Cnd<E> extends Tpl{
 		return this;
 	}
 	
+	
 	public String whereSql(List<Object> sqlArgs){
 		StringBuffer self = new StringBuffer();
 		if(selfSql.length() > 0) {
@@ -209,7 +210,7 @@ public class Cnd<E> extends Tpl{
 		return afterWhere.toString();
 	}
 	
-	public StringBuffer wholeSql(TableMeta tm,SelectTpl<E> tpl,List<Object> sqlArgs) {
+	public StringBuffer selectSql(TableMeta tm,SelectTpl<E> tpl) {
 		StringBuffer sqlSelect = new StringBuffer("SELECT");
 		if(tpl != null) {
 			if(tpl.sql() != null && !tpl.sql().isEmpty()) {
@@ -221,8 +222,13 @@ public class Cnd<E> extends Tpl{
 			sqlSelect.append(" *");
 		}
 		sqlSelect.append(String.format(" FROM %s", tm.getTable()));
-		sqlSelect.append(afterWhere(sqlArgs));
 		return sqlSelect;
+	}
+	public StringBuffer wholeSql(TableMeta tm,SelectTpl<E> tpl,List<Object> sqlArgs) {
+		StringBuffer sql = new StringBuffer();
+		sql.append(selectSql(tm,tpl));
+		sql.append(afterWhere(sqlArgs));
+		return sql;
 	}
 	
 	//TODO 根据上一条数据 和order语句计算相临的两页数据
@@ -292,7 +298,7 @@ public class Cnd<E> extends Tpl{
 	            	if(logic != null) {
 	            		strLogic = logic.toString() +" ";
 	            	}
-	            	if(opt.equals("IN")&& inVals!=null && inVals.length>1) {
+	            	if(opt.equals("IN")&& inVals != null && inVals.length > 1) {
 	            		String stub = OOUtils.genStub("?", ",", inVals.length);
 	            		selfSql.append(String.format("%s%s %s (%s)", strLogic,fieldName,opt, stub));
 	            	}else if(opt.equals("IS NULL")){

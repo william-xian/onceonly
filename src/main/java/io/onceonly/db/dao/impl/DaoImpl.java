@@ -55,13 +55,13 @@ public class DaoImpl<E,ID> implements Dao<E,ID> {
 	}
 
 	@Override
-	public int updateByTpl(UpdateTpl<E> tmpl) {
+	public int updateByTpl(UpdateTpl<E,ID> tmpl) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
 
 	@Override
-	public int updateByTplCnd(UpdateTpl<E> tmpl, Cnd<E> cnd) {
+	public int updateByTplCnd(UpdateTpl<E,ID> tmpl, Cnd<E> cnd) {
 		// TODO Auto-generated method stub
 		return 0;
 	}
