@@ -2,7 +2,10 @@ package io.onceonly.util;
 
 import java.math.BigInteger;
 import java.security.MessageDigest;
+import java.util.Map;
 import java.util.UUID;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -39,6 +42,19 @@ public final class OOUtils {
 		return sb.toString();
 	}
 
+	public static String replaceWord(String str,Map<String,String> tokens) {
+	    String patternString = "(\\b" + String.join("\\b|\\b",tokens.keySet()) + "\\b)"; 
+	    Pattern pattern = Pattern.compile(patternString); 
+	    Matcher matcher = pattern.matcher(str);
+	    //两个方法：appendReplacement, appendTail 
+	    StringBuffer sb = new StringBuffer(); 
+	    while(matcher.find()) { 
+	        matcher.appendReplacement(sb, tokens.get(matcher.group(1))); 
+	    } 
+	    matcher.appendTail(sb);
+	    return sb.toString();
+	}
+	
 	private static final Gson GSON = new GsonBuilder().serializeNulls().create();
 	
 	public static String toJSON(Object obj) {

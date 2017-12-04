@@ -7,10 +7,8 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.Consumer;
 
 import org.springframework.dao.DataAccessException;
@@ -26,8 +24,6 @@ import io.onceonly.db.dao.Page;
 import io.onceonly.db.dao.tpl.SelectTpl;
 import io.onceonly.db.dao.tpl.UpdateTpl;
 import io.onceonly.db.meta.ColumnMeta;
-import io.onceonly.db.meta.DDEngine;
-import io.onceonly.db.meta.DDMeta;
 import io.onceonly.db.meta.TableMeta;
 import io.onceonly.db.tbl.OOEntity;
 import io.onceonly.db.tbl.OOTableMeta;
@@ -41,7 +37,6 @@ public class DaoHelper {
 	private IdGenerator idGenerator;
 	@SuppressWarnings("rawtypes")
 	private Map<String,RowMapper> tableToRowMapper = new HashMap<>();
-	private Map<String,DDMeta> tableToDDMata;
 	private List<Class<? extends OOEntity<?>>> entities;
 	public DaoHelper(){
 	}
@@ -126,14 +121,6 @@ public class DaoHelper {
 		this.tableToRowMapper = tableToRowMapper;
 	}
 
-	public Map<String, DDMeta> getTableToDDMata() {
-		return tableToDDMata;
-	}
-
-	public void setTableToDDMata(Map<String, DDMeta> tableToDDMata) {
-		this.tableToDDMata = tableToDDMata;
-	}
-
 	private void save(OOTableMeta ootm,String name,String val) {
 		if(ootm == null) {
 			ootm = new OOTableMeta();
@@ -206,7 +193,6 @@ public class DaoHelper {
 		};
 		return rowMapper;
 	}
-	
 	public static <E extends OOEntity<?>> E createBy(Class<E> tbl,TableMeta tm,ResultSet rs) throws SQLException {
 		E row = null;
 		try {
@@ -472,29 +458,14 @@ public class DaoHelper {
 			page.setPageSize(OOConfig.PAGE_SIZE_MAX);
 		}
 		if(page.getTotal() == null || page.getTotal() > 0) {
-			if(tm.getEngine() == null) {
-				List<Object> sqlArgs = new ArrayList<>();
-				String sql = cnd.pageSql(tm,tpl,sqlArgs);
-				OOLog.debug(sql);
-				OOLog.debug(sqlArgs.toString());
-				List<E> data = jdbcTemplate.query(sql,sqlArgs.toArray(new Object[0]), rowMapper);
-				page.setData(data);
-			}else {
-				page.setData(findView(tm,tpl,cnd));
-			}
+			List<Object> sqlArgs = new ArrayList<>();
+			String sql = cnd.pageSql(tm,tpl,sqlArgs);
+			OOLog.debug(sql);
+			OOLog.debug(sqlArgs.toString());
+			List<E> data = jdbcTemplate.query(sql,sqlArgs.toArray(new Object[0]), rowMapper);
+			page.setData(data);
 		}
 		return page;
-	}
-	
-	//TODO VIEW
-	private <E extends OOEntity<?>> List<E> findView(TableMeta tm,SelectTpl<E>tpl,Cnd<E>cnd) {
-		DDEngine dde = tm.getEngine();
-		String mainTable = null;
-		Set<String> selectedCols = new HashSet<>();
-		selectedCols.addAll(tpl.columns());
-		Set<String> params = new HashSet<>();
-		dde.deduceDependByParams(mainTable, params);
-		return null;
 	}
 
 	public <E extends OOEntity<?>> E fetch(Class<E> tbl,SelectTpl<E> tpl,Cnd<E> cnd) {

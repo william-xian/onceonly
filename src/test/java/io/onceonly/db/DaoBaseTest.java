@@ -18,7 +18,9 @@ import cn.mx.app.entity.UserChief;
 import cn.mx.app.entity.UserFriend;
 import cn.mx.app.entity.UserProfile;
 import cn.mx.app.entity.Wallet;
+import io.onceonly.db.dao.Cnd;
 import io.onceonly.db.dao.IdGenerator;
+import io.onceonly.db.dao.Page;
 import io.onceonly.db.dao.impl.DaoHelper;
 import io.onceonly.db.tbl.OOEntity;
 import io.onceonly.util.IDGenerator;
@@ -70,4 +72,10 @@ public class DaoBaseTest {
 		}
 	}
 	
+	public static void main(String[] args) {
+		initDao();
+		Cnd<GoodsOrderView> cnd = new Cnd<>(GoodsOrderView.class);
+		Page<GoodsOrderView> page = daoHelper.find(GoodsOrderView.class,cnd);
+		System.out.println(page);
+	}
 }

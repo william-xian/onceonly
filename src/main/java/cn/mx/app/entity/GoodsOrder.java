@@ -7,9 +7,9 @@ import io.onceonly.db.tbl.OOEntity;
 @Tbl
 public class GoodsOrder extends OOEntity<Long>{
 	@Col(ref=UserChief.class)
-	private long userId;
+	private Long userId;
 	@Col(ref=Goods.class,nullable = false)
-	private long goodsId;
+	private Long goodsId;
 	@Col(nullable = false)
 	private Integer amount;
 	@Col(nullable = false)
@@ -19,13 +19,13 @@ public class GoodsOrder extends OOEntity<Long>{
 	public long getUserId() {
 		return userId;
 	}
-	public void setUserId(long userId) {
+	public void setUserId(Long userId) {
 		this.userId = userId;
 	}
-	public long getGoodsId() {
+	public Long getGoodsId() {
 		return goodsId;
 	}
-	public void setGoodsId(long goodsId) {
+	public void setGoodsId(Long goodsId) {
 		this.goodsId = goodsId;
 	}
 	public Integer getAmount() {

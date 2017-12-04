@@ -3,8 +3,10 @@ package io.onceonly.db.dao;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import org.assertj.core.internal.cglib.proxy.Enhancer;
@@ -198,9 +200,19 @@ public class Cnd<E> extends Tpl{
 		return self.toString();
 	}
 	
-	public String afterWhere(List<Object> sqlArgs) {
+	public String afterWhere(TableMeta tm,List<Object> sqlArgs) {
 		StringBuffer afterWhere = new StringBuffer();
 		//TODO VIEW
+		Map<String,String> tokens = new HashMap<>();
+		if(tm.getEngine() != null) {
+			DDEngine dde = tm.getEngine();
+			Set<String> params = new HashSet<>();
+			//TODO DDE 显示数据和筛选排序数据
+			dde.deduceDependByParams(tm.getEntity().getSuperclass().getSimpleName(), params);
+			for(ColumnMeta cm:tm.getColumnMetas()) {
+				tokens.put(cm.getName(), cm.getName());
+			}
+		}
 		String whereCnd = whereSql(sqlArgs);
 		if (!whereCnd.equals("")) {
 			afterWhere.append(String.format(" WHERE (%s)", whereCnd));
@@ -255,7 +267,7 @@ public class Cnd<E> extends Tpl{
 	public StringBuffer wholeSql(TableMeta tm,SelectTpl<E> tpl,List<Object> sqlArgs) {
 		StringBuffer sql = new StringBuffer();
 		sql.append(selectSql(tm,tpl));
-		sql.append(afterWhere(sqlArgs));
+		sql.append(afterWhere(tm,sqlArgs));
 		return sql;
 	}
 	
@@ -270,14 +282,14 @@ public class Cnd<E> extends Tpl{
 		String group = group();
 		if(tm.getEngine() == null) {
 			if(group != null && !group.isEmpty()) {
-				return String.format("SELECT COUNT(1) FROM (SELECT 1 FROM %s %s) t", tm.getTable(), afterWhere(sqlArgs));
+				return String.format("SELECT COUNT(1) FROM (SELECT 1 FROM %s %s) t", tm.getTable(), afterWhere(tm,sqlArgs));
 			}else {
-				return String.format("SELECT COUNT(1) FROM %s %s", tm.getTable(), afterWhere(sqlArgs));
+				return String.format("SELECT COUNT(1) FROM %s %s", tm.getTable(), afterWhere(tm,sqlArgs));
 			}	
 		}else {
 			StringBuffer select = selectSql(tm,tpl);
 			int fromIndex = select.indexOf("FROM");
-			return String.format("SELECT COUNT(1) FROM (SELECT 1 %s %s) t", select.substring(fromIndex), afterWhere(sqlArgs));
+			return String.format("SELECT COUNT(1) FROM (SELECT 1 %s %s) t", select.substring(fromIndex), afterWhere(tm,sqlArgs));
 		}
 	}
 	
