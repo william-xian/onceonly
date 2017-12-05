@@ -168,79 +168,6 @@ public class DDEngine {
 		mappingB.put(a.getName(), relation);
 	}
 
-	/**
-	 * 根据主表和相关参数 推导出依赖的相关表
-	 * @param mainEntity
-	 * @param params
-	 * @return
-	 */
-	public SqlParamData deduceDependByParams(String mainPath,Set<String> params) {
-		DDMeta mainMeta = pathToMeta.get(mainPath);
-		SqlParamData spd = new SqlParamData();
-		if(mainMeta == null) {
-			OOAssert.warnning("%s 不存在", mainPath);
-		}
-		Set<DDMeta> set = new HashSet<>();		
-		if(params != null && !params.isEmpty()) {
-			for(String column:params) {
-				DDMeta meta = columnToMeta.get(column);
-				if(meta != null) {
-					set.add(meta);
-				}else {
-					OOAssert.warnning("列 %s 不存在", column);	
-				}
-			}
-		}
-		Map<String,DDMeta> namePathToMeta = new HashMap<>();
-		Set<DDMeta> depends = new HashSet<>();
-		List<String> dependNamePaths = new ArrayList<>();
-		for(DDMeta meta:set) {
-			Set<DDMeta> spoor = new HashSet<>();
-			List<DDMeta> path = new ArrayList<>();
-			if(search(spoor,path,meta,mainMeta)) {
-				depends.addAll(path);
-				StringBuffer namepath = new StringBuffer();
-				for(int i = path.size() -1 ; i >=0; i--) {
-					namepath.append(path.get(i).getName()+"-");
-				}
-				namePathToMeta.put(namepath.toString(), meta);
-				dependNamePaths.add(namepath.toString());
-			}else {
-				OOAssert.warnning("关系一定有错误，无法推导 %s -> %s", meta,mainPath);	
-			}
-		}
-		Set<DDMeta> supplements = new HashSet<>();
-		for(DDMeta meta:aliasToMeta.values()) {
-			if(!depends.contains(meta)) {
-				supplements.add(meta);
-			}
-		}
-		List<String> supplementNamePaths = new ArrayList<>(supplements.size());
-		for(DDMeta meta:supplements) {
-			Set<DDMeta> spoor = new HashSet<>();
-			List<DDMeta> path = new ArrayList<>();
-			if(search(spoor,path,meta,mainMeta)) {
-				StringBuffer namepath = new StringBuffer();
-				for(int i = path.size() -1 ; i >=0; i--) {
-					namepath.append(path.get(i).getName()+"-");
-				}
-				namepath.delete(namepath.length()-1, namepath.length());
-				namePathToMeta.put(namepath.toString(), meta);
-				supplementNamePaths.add(namepath.toString());
-			}else {
-				OOAssert.warnning("关系一定有错误，无法推导 %s -> %s", meta,mainPath);	
-			}
-		}
-		spd.setMain(mainMeta);
-		Collections.sort(dependNamePaths);
-		Collections.sort(supplementNamePaths);
-		spd.setDepends(depends);
-		spd.setDependNamePaths(dependNamePaths);
-		spd.setSupplements(supplements);
-		spd.setSupplementNamePaths(supplementNamePaths);
-		spd.setNamePathToMeta(namePathToMeta);
-		return spd;
-	}
 	/** 
 	 * 寻找足迹
 	 */
@@ -268,26 +195,73 @@ public class DDEngine {
 		return false;
 	}
 	
-	
-	public void generateSql(SqlParamData data) {
-		DDMeta mainMeta = data.getMain();
-		Set<DDMeta> depends = data.getDepends();
-		List<String> dnps = data.getDependNamePaths();
+	/**
+	 * 根据主表和相关参数 推导出依赖的相关表
+	 * @param mainEntity
+	 * @param params
+	 * @return
+	 */
+	public String genericJoinSqlByParams(String mainPath,Set<String> select,Set<String> params) {
+		DDMeta mainMeta = pathToMeta.get(mainPath);
+		if(mainMeta == null) {
+			OOAssert.warnning("%s 不存在", mainPath);
+		}
+		Set<DDMeta> set = new HashSet<>();		
+		if(params != null && !params.isEmpty()) {
+			for(String column:params) {
+				DDMeta meta = columnToMeta.get(column);
+				if(meta != null) {
+					set.add(meta);
+				}else {
+					OOAssert.warnning("列 %s 不存在", column);	
+				}
+			}
+		}
+		if(select != null && !select.isEmpty()) {
+			for(String column:select) {
+				DDMeta meta = columnToMeta.get(column);
+				if(meta != null) {
+					set.add(meta);
+				}else {
+					OOAssert.warnning("列 %s 不存在", column);	
+				}
+			}
+		}
+		Set<DDMeta> depends = new HashSet<>();
+		List<String> dependNamePaths = new ArrayList<>();
+		for(DDMeta meta:set) {
+			Set<DDMeta> spoor = new HashSet<>();
+			List<DDMeta> path = new ArrayList<>();
+			if(search(spoor,path,meta,mainMeta)) {
+				depends.addAll(path);
+				StringBuffer namepath = new StringBuffer();
+				for(int i = path.size() -1 ; i >=0; i--) {
+					namepath.append(path.get(i).getName()+"-");
+				}
+				dependNamePaths.add(namepath.toString());
+			}else {
+				OOAssert.warnning("关系一定有错误，无法推导 %s -> %s", meta,mainPath);	
+			}
+		}
+		Collections.sort(dependNamePaths);
 		depends.add(mainMeta);
 		StringBuffer sql = new StringBuffer("SELECT ");
 		for(DDMeta meta:depends) {
 			Map<String,String> c2o = meta.getColumnToOrigin();
 			for(String column:c2o.keySet()) {
-				sql.append(String.format("%s.%s %s, ", meta.getName(),c2o.get(column),column));
+				if(select.contains(column)) {
+					sql.append(String.format("%s.%s %s, ", meta.getName(),c2o.get(column),column));
+				}
 			}
 		}
+		
 		//删除最后两个字符：逗号空格
 		sql.delete(sql.length()-2, sql.length());
 		sql.append(String.format("\nFROM %s %s", mainMeta.getTable(), mainMeta.getName()));
-		if(dnps != null && !dnps.isEmpty()) {
+		if(dependNamePaths != null && !dependNamePaths.isEmpty()) {
 			Set<String> spoor = new HashSet<>();
 			spoor.add(mainMeta.getName());
-			for(String dnp:dnps) {
+			for(String dnp:dependNamePaths) {
 				String[] deps = dnp.split("-");
 				String depend = deps[0];
 				for(int i = 1; i < deps.length; i++) {
@@ -300,12 +274,9 @@ public class DDEngine {
 					sql.append(String.format("\nLEFT JOIN %s %s on %s", meta.getTable(),meta.getName(),rel));
 					depend = deps[i];
 				}
-				
 			}
-				
 		}
-		
-		data.setSql(sql.toString());
+		return sql.toString();
 	}
 	
 }

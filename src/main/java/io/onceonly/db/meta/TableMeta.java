@@ -410,7 +410,6 @@ public class TableMeta {
 					dde.append(String.format("%s{%s}", path,String.join(",",pathToColumns.get(path))));	
 				}
 				dde.build();
-				System.err.println(OOUtils.toJSON(dde));
 			}else {
 				OOAssert.warnning("Tbl必须继承一个Tbl", tm.getEntityName());
 				return null;

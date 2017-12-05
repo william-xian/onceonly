@@ -3,6 +3,7 @@ package io.onceonly.db;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Properties;
 
@@ -77,5 +78,19 @@ public class DaoBaseTest {
 		Cnd<GoodsOrderView> cnd = new Cnd<>(GoodsOrderView.class);
 		Page<GoodsOrderView> page = daoHelper.find(GoodsOrderView.class,cnd);
 		System.out.println(page);
+		
+		Cnd<GoodsOrder> rm = new Cnd<>(GoodsOrder.class);
+		rm.ge().setId(0L);
+		List<Long> ids = Arrays.asList(1L,2L,3L,4L,5L);
+		daoHelper.remove(UserChief.class, ids);
+		daoHelper.remove(Goods.class, ids);
+		daoHelper.remove(GoodsDesc.class, ids);
+		daoHelper.remove(GoodsOrder.class, rm);
+		Cnd<GoodsOrder> del = new Cnd<>(GoodsOrder.class);
+		del.ge().setId(0L);
+		daoHelper.delete(GoodsOrder.class, del);
+		daoHelper.delete(UserChief.class, ids);
+		daoHelper.delete(Goods.class, ids);
+		daoHelper.delete(GoodsDesc.class, ids);
 	}
 }

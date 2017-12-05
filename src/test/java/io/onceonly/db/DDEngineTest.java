@@ -6,7 +6,6 @@ import java.util.Set;
 import org.junit.Test;
 
 import io.onceonly.db.meta.DDEngine;
-import io.onceonly.db.meta.SqlParamData;
 import io.onceonly.util.OOUtils;
 
 public class DDEngineTest {
@@ -42,10 +41,8 @@ public class DDEngineTest {
 		Set<String> params = new HashSet<String>();
 		params.add("content");
 		params.add("receiverAddr");
-		SqlParamData spd = dde.deduceDependByParams("GoodsOrder.goodsOrderId-GoodsShipping", params);
-		System.out.println(spd);
-		dde.generateSql(spd);
-		System.out.println(spd.getSql());
+		String sql = dde.genericJoinSqlByParams("GoodsOrder.goodsOrderId-GoodsShipping", params,null);
+		System.out.println(sql);
 	}
 	/**
 	2.在情人节，收到两位以上好友的礼物用户，好友是谁？
@@ -68,10 +65,8 @@ public class DDEngineTest {
 		System.out.println(OOUtils.toJSON(dde));
 		Set<String> params = new HashSet<String>();
 		params.add("fname");
-		SqlParamData spd = dde.deduceDependByParams("O", params);
-		System.out.println(spd);
-		dde.generateSql(spd);
-		System.out.println(spd.getSql());
+		String sql = dde.genericJoinSqlByParams("O", params,null);
+		System.out.println(sql);
 	}
 	
 }

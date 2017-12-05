@@ -49,6 +49,8 @@ public final class OOUtils {
 	    //两个方法：appendReplacement, appendTail 
 	    StringBuffer sb = new StringBuffer(); 
 	    while(matcher.find()) { 
+	    	System.out.println("grp:" + matcher.group(1));
+	    	System.out.println("token:" + tokens.get(matcher.group(1)));
 	        matcher.appendReplacement(sb, tokens.get(matcher.group(1))); 
 	    } 
 	    matcher.appendTail(sb);

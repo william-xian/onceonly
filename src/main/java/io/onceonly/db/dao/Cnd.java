@@ -20,7 +20,7 @@ import io.onceonly.db.dao.tpl.SelectTpl;
 import io.onceonly.db.dao.tpl.Tpl;
 import io.onceonly.db.meta.ColumnMeta;
 import io.onceonly.db.meta.DDEngine;
-import io.onceonly.db.meta.SqlParamData;
+import io.onceonly.db.meta.DDMeta;
 import io.onceonly.db.meta.TableMeta;
 import io.onceonly.util.OOLog;
 import io.onceonly.util.OOUtils;
@@ -202,48 +202,54 @@ public class Cnd<E> extends Tpl{
 	
 	public String afterWhere(TableMeta tm,List<Object> sqlArgs) {
 		StringBuffer afterWhere = new StringBuffer();
-		//TODO VIEW
-		Map<String,String> tokens = new HashMap<>();
+		Map<String,String> tokens = null;;
 		if(tm.getEngine() != null) {
 			DDEngine dde = tm.getEngine();
-			Set<String> params = new HashSet<>();
-			//TODO DDE 显示数据和筛选排序数据
-			dde.deduceDependByParams(tm.getEntity().getSuperclass().getSimpleName(), params);
-			for(ColumnMeta cm:tm.getColumnMetas()) {
-				tokens.put(cm.getName(), cm.getName());
+			tokens = new HashMap<>();
+			for(String col:dde.columnToMeta.keySet()) {
+				DDMeta meta = dde.columnToMeta.get(col);
+				tokens.put(col, meta.getName()+"."+meta.getColumnToOrigin().get(col));
 			}
 		}
+		
 		String whereCnd = whereSql(sqlArgs);
 		if (!whereCnd.equals("")) {
-			afterWhere.append(String.format(" WHERE (%s)", whereCnd));
+			if(tokens == null) {
+				afterWhere.append(String.format(" WHERE (%s)", whereCnd));
+			}else {
+				afterWhere.append(String.format(" WHERE (%s)", OOUtils.replaceWord(whereCnd, tokens)));	
+			}
 		}
 		String group = group();
 		if(group != null && !group.isEmpty()) {
 			afterWhere.append(String.format(" GROUP BY %s", group));
 		}
-		//TODO VIEW
 		String having = getHaving();
 		if(having != null && !having.isEmpty()) {
-			afterWhere.append(String.format(" HAVING %s", having));
+			if(tokens == null) {
+				afterWhere.append(String.format(" HAVING %s", having));
+			}else {
+				afterWhere.append(String.format(" HAVING %s", OOUtils.replaceWord(having, tokens)));	
+			}
 		}
 		String order = getOrder();
 		if(!order.isEmpty()) {
 			afterWhere.append(String.format(" ORDER BY %s", order));
-		}
+		}		
 		return afterWhere.toString();
 	}
 	
 	public StringBuffer selectSql(TableMeta tm,SelectTpl<E> tpl) {
-		StringBuffer sqlSelect = new StringBuffer("SELECT");
+		StringBuffer sqlSelect = new StringBuffer();
 		if(tm.getEngine() == null) {
-			if(tpl != null) {
-				if(tpl.sql() != null && !tpl.sql().isEmpty()) {
-					sqlSelect.append(" " + tpl.sql());		
-				}else {
-					sqlSelect.append(" *");		
-				}
+			sqlSelect.append("SELECT ");
+			if(tpl != null && tpl.sql() != null && !tpl.sql().isEmpty()) {
+				sqlSelect.append(tpl.sql());		
 			}else {
-				sqlSelect.append(" *");
+				for(ColumnMeta cm:tm.getColumnMetas()) {
+					sqlSelect.append(cm.getName()+",");
+				}
+				sqlSelect.delete(sqlSelect.length()-1, sqlSelect.length());
 			}
 			sqlSelect.append(String.format(" FROM %s", tm.getTable()));
 		}else {
@@ -256,11 +262,9 @@ public class Cnd<E> extends Tpl{
 					params.add(cm.getName());
 				}
 			}
-			tm.getEntityName();
 			String mainPath = tm.getEntity().getSuperclass().getSimpleName();
-			SqlParamData spd = dde.deduceDependByParams(mainPath, params);
-			dde.generateSql(spd);
-			sqlSelect.append(spd.getSql());
+			String sql = dde.genericJoinSqlByParams(mainPath, params,null);
+			sqlSelect.append(sql);
 		}
 		return sqlSelect;
 	}
