@@ -3,7 +3,6 @@ package io.onceonly.db.dao;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -20,7 +19,6 @@ import io.onceonly.db.dao.tpl.SelectTpl;
 import io.onceonly.db.dao.tpl.Tpl;
 import io.onceonly.db.meta.ColumnMeta;
 import io.onceonly.db.meta.DDEngine;
-import io.onceonly.db.meta.DDMeta;
 import io.onceonly.db.meta.TableMeta;
 import io.onceonly.util.OOLog;
 import io.onceonly.util.OOUtils;
@@ -205,11 +203,7 @@ public class Cnd<E> extends Tpl{
 		Map<String,String> tokens = null;;
 		if(tm.getEngine() != null) {
 			DDEngine dde = tm.getEngine();
-			tokens = new HashMap<>();
-			for(String col:dde.columnToMeta.keySet()) {
-				DDMeta meta = dde.columnToMeta.get(col);
-				tokens.put(col, meta.getName()+"."+meta.getColumnToOrigin().get(col));
-			}
+			tokens = dde.getColumnToOrigin();
 		}
 		
 		String whereCnd = whereSql(sqlArgs);
@@ -241,8 +235,8 @@ public class Cnd<E> extends Tpl{
 	
 	public StringBuffer selectSql(TableMeta tm,SelectTpl<E> tpl) {
 		StringBuffer sqlSelect = new StringBuffer();
+		sqlSelect.append("SELECT ");
 		if(tm.getEngine() == null) {
-			sqlSelect.append("SELECT ");
 			if(tpl != null && tpl.sql() != null && !tpl.sql().isEmpty()) {
 				sqlSelect.append(tpl.sql());		
 			}else {
@@ -255,16 +249,20 @@ public class Cnd<E> extends Tpl{
 		}else {
 			DDEngine dde = tm.getEngine();
 			Set<String> params = new HashSet<>();
+			Map<String,String> colToOrigin = dde.getColumnToOrigin();
 			if(tpl != null) {
-				params.addAll(tpl.columns());	
+				params.addAll(tpl.getArgNames());	
+				sqlSelect.append(tpl.sql(colToOrigin));		
 			}else {
 				for(ColumnMeta cm:tm.getColumnMetas()) {
 					params.add(cm.getName());
+					sqlSelect.append(String.format("%s %s,", colToOrigin.get(cm.getName()),cm.getName()));
 				}
+				sqlSelect.delete(sqlSelect.length()-1, sqlSelect.length());
 			}
 			String mainPath = tm.getEntity().getSuperclass().getSimpleName();
-			String sql = dde.genericJoinSqlByParams(mainPath, params,null);
-			sqlSelect.append(sql);
+			String joinTables = dde.genericJoinSqlByParams(mainPath, params,null);
+			sqlSelect.append(String.format(" FROM %s", joinTables));
 		}
 		return sqlSelect;
 	}

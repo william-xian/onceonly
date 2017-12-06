@@ -1,10 +1,12 @@
 package io.onceonly.db;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -15,24 +17,22 @@ import cn.mx.app.entity.GoodsOrderView;
 import cn.mx.app.entity.UserChief;
 import io.onceonly.db.dao.Cnd;
 import io.onceonly.db.dao.Page;
+import io.onceonly.db.dao.tpl.SelectTpl;
+import io.onceonly.db.dao.tpl.Tpl;
 
 public class DaoHelperViewTest extends DaoBaseTest{
 	
+
+	private static List<UserChief> ucs = new ArrayList<>();
+	private static List<Goods> goodses = new ArrayList<>();
+	private static List<GoodsDesc> goodsDesces = new ArrayList<>();
+	private static List<GoodsOrder> goodsOrderes = new ArrayList<>();
 	@BeforeClass
 	public static void init() {
 		initDao();
+		insert();
 	}
-	@AfterClass
-	public static void cleanup() {
-	}
-	
-	@Test
-	public void findView() {
-		
-		List<UserChief> ucs = new ArrayList<>();
-		List<Goods> goodses = new ArrayList<>();
-		List<GoodsDesc> goodsDesces = new ArrayList<>();
-		List<GoodsOrder> goodsOrderes = new ArrayList<>();
+	public static void insert() {
 		for(int i = 0; i < 5; i++) {
 			UserChief uc = new UserChief();
 			uc.setId(1L+i);
@@ -48,7 +48,6 @@ public class DaoHelperViewTest extends DaoBaseTest{
 			gd.setSaled(0);
 			goodsDesces.add(gd);
 		}
-		
 		for(int i = 0; i < 25; i++) {
 			GoodsOrder go = new GoodsOrder();
 			go.setId(1L+i);
@@ -64,13 +63,9 @@ public class DaoHelperViewTest extends DaoBaseTest{
 		daoHelper.insert(goodses);
 		daoHelper.insert(goodsDesces);
 		daoHelper.insert(goodsOrderes);
-		
-		
-		Cnd<GoodsOrderView> cnd = new Cnd<>(GoodsOrderView.class);
-		Page<GoodsOrderView> page = daoHelper.find(GoodsOrderView.class,cnd);
-		System.out.println(page);
-
-		
+	}
+	@AfterClass
+	public static void cleanup() {
 		Cnd<GoodsOrder> rm = new Cnd<>(GoodsOrder.class);
 		rm.ge().setId(0L);
 		List<Long> ids = Arrays.asList(1L,2L,3L,4L,5L);
@@ -84,7 +79,35 @@ public class DaoHelperViewTest extends DaoBaseTest{
 		daoHelper.delete(UserChief.class, ids);
 		daoHelper.delete(Goods.class, ids);
 		daoHelper.delete(GoodsDesc.class, ids);
+	}
+	
+	@Test
+	public void findView() {
+		Cnd<GoodsOrderView> cnd = new Cnd<>(GoodsOrderView.class);
+		cnd.setPageSize(25);
+		SelectTpl<GoodsOrderView> tplOrder = new SelectTpl<>(GoodsOrderView.class);
+		tplOrder.usingRowNum();
+		Page<GoodsOrderView> page = daoHelper.find(GoodsOrderView.class,tplOrder,cnd);
+		System.out.println(page);
+		Assert.assertEquals(new Long(25), page.getTotal());
+		Assert.assertEquals(25L, page.getData().size());
+		GoodsOrderView gov = daoHelper.get(GoodsOrderView.class, 1L);
+		Assert.assertNotNull(gov);
 		
+		SelectTpl<GoodsOrderView> tpl = new SelectTpl<>(GoodsOrderView.class);
+		tpl.max().setId(Tpl.USING_LONG);
+		GoodsOrderView maxTime = daoHelper.fetch(GoodsOrderView.class, tpl, cnd);
+		Assert.assertEquals(25L, maxTime.getId()+0L);
+		
+		SelectTpl<GoodsOrderView> tplMin = new SelectTpl<>(GoodsOrderView.class);
+		tplMin.min().setId(Tpl.USING_LONG);
+		tplMin.sum().setId(Tpl.USING_LONG);
+		tplMin.avg().setId(Tpl.USING_LONG);
+		GoodsOrderView min = daoHelper.fetch(GoodsOrderView.class, tplMin, cnd);
+		Assert.assertEquals(1L, min.getId()+0L);
+		System.out.println(min);
+		Assert.assertEquals(new BigDecimal((1L+25)*25/2), (BigDecimal)min.getExtra().get("sum_id"));
+		Assert.assertEquals(new BigDecimal((1L+25)/2).intValue(), ((BigDecimal)min.getExtra().get("avg_id")).intValue());
 	}
 	
 }

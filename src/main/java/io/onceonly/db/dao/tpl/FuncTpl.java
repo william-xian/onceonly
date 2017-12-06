@@ -41,6 +41,11 @@ public abstract class FuncTpl<E> extends Tpl{
 		funcs.add("AVG");
 		return tpl;
 	}
+	
+	public List<String> getArgNames() {
+		return argNames;
+	}
+
 	class FuncSetterProxy implements MethodInterceptor {  
 	    @Override  
 	    public Object intercept(Object o, Method method, Object[] args, MethodProxy methodProxy) throws Throwable {

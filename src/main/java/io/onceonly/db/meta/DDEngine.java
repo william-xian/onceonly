@@ -181,7 +181,7 @@ public class DDEngine {
 		}
 		path.add(src);
 		spoor.add(src);
-		if(map.containsKey(dest.getName())) {
+		if(map.containsKey(dest.getName()) || src.getName().equals(dest.getName())) {
 			path.add(dest);
 			return true;
 		}else  {
@@ -245,19 +245,8 @@ public class DDEngine {
 		}
 		Collections.sort(dependNamePaths);
 		depends.add(mainMeta);
-		StringBuffer sql = new StringBuffer("SELECT ");
-		for(DDMeta meta:depends) {
-			Map<String,String> c2o = meta.getColumnToOrigin();
-			for(String column:c2o.keySet()) {
-				if(select.contains(column)) {
-					sql.append(String.format("%s.%s %s, ", meta.getName(),c2o.get(column),column));
-				}
-			}
-		}
-		
-		//删除最后两个字符：逗号空格
-		sql.delete(sql.length()-2, sql.length());
-		sql.append(String.format("\nFROM %s %s", mainMeta.getTable(), mainMeta.getName()));
+		StringBuffer sql = new StringBuffer("");
+		sql.append(String.format("%s %s", mainMeta.getTable(), mainMeta.getName()));
 		if(dependNamePaths != null && !dependNamePaths.isEmpty()) {
 			Set<String> spoor = new HashSet<>();
 			spoor.add(mainMeta.getName());
@@ -277,6 +266,15 @@ public class DDEngine {
 			}
 		}
 		return sql.toString();
+	}
+	
+	public Map<String,String> getColumnToOrigin() {
+		Map<String,String> tokens = new HashMap<>();
+		for(String col:columnToMeta.keySet()) {
+			DDMeta meta = columnToMeta.get(col);
+			tokens.put(col, meta.getName()+"."+meta.getColumnToOrigin().get(col));
+		}
+		return tokens;
 	}
 	
 }
