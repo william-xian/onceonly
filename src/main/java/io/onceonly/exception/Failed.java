@@ -13,13 +13,13 @@ public class Failed extends RuntimeException{
 	private Object[] args;
 	private Object data;
 
-	private Failed(int level, String format, Object[] args) {
+	protected Failed(int level, String format, Object[] args) {
 		super();
 		this.level = level;
 		this.format = format;
 		this.args = args;
 	}
-	private Failed(int level, String format, Object[] args,Object data) {
+	protected Failed(int level, String format, Object[] args,Object data) {
 		super();
 		this.level = level;
 		this.format = format;
@@ -70,4 +70,5 @@ public class Failed extends RuntimeException{
 	public static void throwErrorData(Object data,String format,Object... args){
 		throw new Failed(ERROR,format,args,data);
 	}
+	
 }

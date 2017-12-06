@@ -29,6 +29,7 @@ import io.onceonly.db.meta.ConstraintMeta;
 import io.onceonly.db.meta.TableMeta;
 import io.onceonly.db.tbl.OOEntity;
 import io.onceonly.db.tbl.OOTableMeta;
+import io.onceonly.exception.VolidateFailed;
 import io.onceonly.util.OOAssert;
 import io.onceonly.util.OOLog;
 import io.onceonly.util.OOUtils;
@@ -270,6 +271,7 @@ public class DaoHelper {
 		Class<?> tbl = entity.getClass();
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
+		validate(tm,entity,false);
 		TblIdNameVal<E> idNameVal = new TblIdNameVal<>(tm.getColumnMetas(),Arrays.asList(entity));
 		if(idNameVal.getIdAt(0) == null) {
 			Object id = idGenerator.next(tbl);
@@ -283,18 +285,49 @@ public class DaoHelper {
 		jdbcTemplate.update(sql, vals.toArray());
 		return entity;
 	}
-	
+	private void validate(TableMeta tm,Object obj,boolean ignoreNull) {
+		for(ColumnMeta cm:tm.getColumnMetas()) {
+			if(cm.getName().equals("id") || cm.getName().equals("rm")) {
+				continue;
+			}
+			Object val = null;
+			try {
+				val = cm.getField().get(obj);
+			} catch (IllegalArgumentException | IllegalAccessException e) {
+				OOLog.info(e.getMessage());
+			}
+			if(!cm.isNullable() && val == null && !ignoreNull) {
+				VolidateFailed vf = VolidateFailed.createError("%s cannot be null", cm.getName());
+				vf.put(cm.getName(), "cannot be null");
+				vf.throwSelf();
+			} else if(val != null) {
+				if(!cm.getPattern().equals("")) {
+					if(val.toString().matches(cm.getPattern())) {
+						VolidateFailed vf = VolidateFailed.createError("%s does not matches %s", cm.getName(),cm.getPattern());
+						vf.put(cm.getName(), cm.getPattern());
+						vf.throwSelf();
+					}
+				}
+			}	
+		}
+		
+	}
 	public <E extends OOEntity<?>> int insert(List<E> entities) {
 		OOAssert.warnning(entities != null && !entities.isEmpty(),"不可以插入null");
 		Class<?> tbl = entities.get(0).getClass();
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
+		
+		for(E entity:entities) {
+			validate(tm,entity,false);
+		}
+		
 		TblIdNameVal<E> idNameVal = new TblIdNameVal<>(tm.getColumnMetas(),entities);
 		for(int i = 0; i < idNameVal.ids.size(); i++) {
 			if(idNameVal.getIdAt(i) == null) {
 				Object id = idGenerator.next(tbl);
 				idNameVal.setIdAt(i, id);
-			}	
+			}
 		}
 
 		idNameVal.dropAllNullColumns();
@@ -330,7 +363,8 @@ public class DaoHelper {
 	private <E extends OOEntity<?>> int update(E entity,boolean ignoreNull) {
 		OOAssert.warnning(entity != null,"不可以插入null");
 		Class<?> tbl = entity.getClass();
-		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
+		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());
+		validate(tm,entity,ignoreNull);
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
 		TblIdNameVal<E> idNameVal = new TblIdNameVal<>(tm.getColumnMetas(),Arrays.asList(entity));
 		Object id = idNameVal.getIdAt(0);
@@ -356,10 +390,12 @@ public class DaoHelper {
 		return update(entity,true);	
 	}
 	
+	
 	public <E extends OOEntity<?>> int updateByTpl(Class<E> tbl, UpdateTpl<E> tpl) {
 		OOAssert.warnning(tpl.getId() != null && tpl != null,"Are you sure to update a null value?");
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
+		//validate(tm,tpl,false);
 		String setTpl = tpl.getSetTpl();
 		List<Object> vals = new ArrayList<>(tpl.getArgs().size()+1);
 		vals.addAll(tpl.getArgs());
@@ -372,6 +408,7 @@ public class DaoHelper {
 		OOAssert.warnning(tpl != null,"Are you sure to update a null value?");
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
+		//validate(tm,tpl,false);
 		List<Object> vals = new ArrayList<>();
 		vals.addAll(tpl.getArgs());
 		List<Object> sqlArgs = new ArrayList<>();
