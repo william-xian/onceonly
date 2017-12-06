@@ -63,7 +63,7 @@ public class SelectTpl<E> extends FuncTpl<E>{
 			String func = funcs.get(i);
 			String argName = argNames.get(i);
 			if(func.equals("")) {
-				sb.append(argName + ",");
+				sb.append(String.format("%s %s,",colToOrigin.get(argName),argName));
 			}else if(func.equals("MAX")){
 				sb.append(String.format("%s(%s) %s,",func,colToOrigin.get(argName),argName));
 			}else if(func.equals("MIN")){

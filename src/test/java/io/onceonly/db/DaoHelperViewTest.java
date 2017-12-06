@@ -81,7 +81,7 @@ public class DaoHelperViewTest extends DaoBaseTest{
 		daoHelper.delete(GoodsDesc.class, ids);
 	}
 	
-	@Test
+	//@Test
 	public void findView() {
 		Cnd<GoodsOrderView> cnd = new Cnd<>(GoodsOrderView.class);
 		cnd.setPageSize(25);
@@ -109,5 +109,18 @@ public class DaoHelperViewTest extends DaoBaseTest{
 		Assert.assertEquals(new BigDecimal((1L+25)*25/2), (BigDecimal)min.getExtra().get("sum_id"));
 		Assert.assertEquals(new BigDecimal((1L+25)/2).intValue(), ((BigDecimal)min.getExtra().get("avg_id")).intValue());
 	}
+	@Test
+	public void having() {
+		Cnd<GoodsOrderView> cnd = new Cnd<>(GoodsOrderView.class);
+		SelectTpl<GoodsOrderView> tpl = new SelectTpl<>(GoodsOrderView.class);
+		tpl.max().setId(Tpl.USING_LONG);
+		tpl.using().setUserName(Tpl.USING_S);
+		cnd.groupBy().use().setUserName(Tpl.USING_S);
+		cnd.having().max().setId(Tpl.USING_LONG);
+		cnd.having().gt(2L);
+		Page<GoodsOrderView> page = daoHelper.find(GoodsOrderView.class,tpl,cnd);
+		System.out.println(page);
+	}
+	
 	
 }

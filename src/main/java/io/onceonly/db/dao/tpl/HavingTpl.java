@@ -87,7 +87,7 @@ public class HavingTpl<E> extends FuncTpl<E>{
 		return this;
 	}
 	
-	public String sql() {
+	public String sql(List<Object> sqlArgs) {
 		StringBuffer sb = new StringBuffer();
 		for(int i = 0; i < funcs.size(); i++) {
 			String func = funcs.get(i);
@@ -99,13 +99,14 @@ public class HavingTpl<E> extends FuncTpl<E>{
 			String opt = opts.get(i);
 			if(opt != null) {
 				sb.append(String.format("%s(%s) %s ? %s"	, func,argName,opt,logic));
+				sqlArgs.add(args.get(i));
 			}
 		}
 		for(int i = 0; i < extTpls.size(); i++) {
 			String extLogic = extLogics.get(i);
-			String extSql = extTpls.get(i).sql();
+			String extSql = extTpls.get(i).sql(sqlArgs);
 			if(!extSql.equals("")) {
-				sb.append(String.format("%s (%s)", extLogic,extTpls.get(i).sql()));	
+				sb.append(String.format("%s (%s)", extLogic,extTpls.get(i).sql(sqlArgs)));	
 			}else {
 				OOLog.warnning("the sql of having's %s is empty", extLogic);
 			}

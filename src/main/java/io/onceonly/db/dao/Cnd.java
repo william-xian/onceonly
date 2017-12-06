@@ -216,9 +216,13 @@ public class Cnd<E> extends Tpl{
 		}
 		String group = group();
 		if(group != null && !group.isEmpty()) {
-			afterWhere.append(String.format(" GROUP BY %s", group));
+			if(tokens == null) {
+				afterWhere.append(String.format(" GROUP BY %s", group));
+			}else {
+				afterWhere.append(String.format(" GROUP BY %s", OOUtils.replaceWord(group, tokens)));
+			}
 		}
-		String having = getHaving();
+		String having = getHaving(sqlArgs);
 		if(having != null && !having.isEmpty()) {
 			if(tokens == null) {
 				afterWhere.append(String.format(" HAVING %s", having));
@@ -228,7 +232,11 @@ public class Cnd<E> extends Tpl{
 		}
 		String order = getOrder();
 		if(!order.isEmpty()) {
-			afterWhere.append(String.format(" ORDER BY %s", order));
+			if(tokens == null) {
+				afterWhere.append(String.format(" ORDER BY %s", order));
+			}else {
+				afterWhere.append(String.format(" ORDER BY %s", OOUtils.replaceWord(order, tokens)));	
+			}
 		}		
 		return afterWhere.toString();
 	}
@@ -263,6 +271,7 @@ public class Cnd<E> extends Tpl{
 			String mainPath = tm.getEntity().getSuperclass().getSimpleName();
 			String joinTables = dde.genericJoinSqlByParams(mainPath, params,null);
 			sqlSelect.append(String.format(" FROM %s", joinTables));
+			System.err.println(sqlSelect);
 		}
 		return sqlSelect;
 	}
@@ -301,9 +310,9 @@ public class Cnd<E> extends Tpl{
 		}
 		return having;
 	}
-	public String getHaving() {
+	public String getHaving(List<Object> sqlArgs) {
 		if(having != null) {
-			return having.sql();
+			return having.sql(sqlArgs);
 		}else {
 			return null;
 		}

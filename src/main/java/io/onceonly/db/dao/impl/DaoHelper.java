@@ -253,7 +253,7 @@ public class DaoHelper {
 		return row;
 	}
 	
-	public <E extends OOEntity<Long>> E get(Class<E> tbl,Long id) {
+	public <E extends OOEntity<ID>,ID> E get(Class<E> tbl,ID id) {
 		Cnd<E> cnd = new Cnd<E>(tbl);
 		cnd.setPage(1);
 		cnd.setPageSize(1);
@@ -356,7 +356,7 @@ public class DaoHelper {
 		return update(entity,true);	
 	}
 	
-	public <E extends OOEntity<ID>,ID> int updateByTpl(Class<E> tbl, UpdateTpl<E,ID> tpl) {
+	public <E extends OOEntity<?>> int updateByTpl(Class<E> tbl, UpdateTpl<E> tpl) {
 		OOAssert.warnning(tpl.getId() != null && tpl != null,"Are you sure to update a null value?");
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
@@ -368,7 +368,7 @@ public class DaoHelper {
 		return jdbcTemplate.update(sql, vals.toArray());
 	}
 	
-	public <E extends OOEntity<ID>,ID> int updateByTplCnd(Class<E> tbl,UpdateTpl<E,ID> tpl,Cnd<E> cnd) {
+	public <E extends OOEntity<?>> int updateByTplCnd(Class<E> tbl,UpdateTpl<E> tpl,Cnd<E> cnd) {
 		OOAssert.warnning(tpl != null,"Are you sure to update a null value?");
 		TableMeta tm = tableToTableMeta.get(tbl.getSimpleName());	
 		OOAssert.fatal(tm != null,"无法找到表：%s",tbl.getSimpleName());
@@ -494,7 +494,7 @@ public class DaoHelper {
 			String sql = cnd.pageSql(tm,tpl,sqlArgs);
 			OOLog.debug(sql);
 			OOLog.debug(sqlArgs.toString());
-			List<E> data = jdbcTemplate.query(sql,sqlArgs.toArray(new Object[0]), rowMapper);
+			List<E> data = jdbcTemplate.query(sql,sqlArgs.toArray(), rowMapper);
 			page.setData(data);
 		}
 		return page;

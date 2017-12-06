@@ -108,7 +108,6 @@ public class DaoHelperTest extends DaoBaseTest{
 		UserChief db2 = daoHelper.get(UserChief.class, uc2.getId());
 		Assert.assertEquals(up2.getName(),db2.getName());
 		Assert.assertNotNull(db2.getName());
-		
 		/** 无关数据没有被干扰 */
 		UserChief db3 = daoHelper.get(UserChief.class, uc3.getId());
 		uc3.setRm(false);
@@ -133,11 +132,11 @@ public class DaoHelperTest extends DaoBaseTest{
 		daoHelper.insert(ucs);
 		UserChief uc1 = ucs.get(0);
 		UserChief uc2 = ucs.get(1);
-		UpdateTpl<UserChief,Long> tpl = new UpdateTpl<>(UserChief.class);
-		tpl.setId(uc1.getId());
+		UpdateTpl<UserChief> tpl = new UpdateTpl<>(UserChief.class);
+		tpl.set().setId(uc1.getId());
 		tpl.add().setGenre(1);
 		daoHelper.updateByTpl(UserChief.class,tpl);
-		UserChief db1 = daoHelper.get(UserChief.class, tpl.getId());
+		UserChief db1 = daoHelper.get(UserChief.class, (Long)tpl.getId());
 		Assert.assertEquals(1,db1.getGenre().intValue());
 		UserChief db2 = daoHelper.get(UserChief.class, uc2.getId());
 		uc2.setRm(false);
