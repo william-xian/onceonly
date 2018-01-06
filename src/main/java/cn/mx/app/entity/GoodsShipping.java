@@ -5,7 +5,7 @@ import io.onceonly.db.annotation.Tbl;
 import io.onceonly.db.tbl.OOEntity;
 
 @Tbl
-public class GoodsShipping extends OOEntity<Long> {
+public class GoodsShipping extends OOEntity {
 	@Col(ref=GoodsOrder.class, nullable = false)
 	private long goodsOrderId;
 	@Col(ref=UserChief.class,nullable = false)

@@ -11,7 +11,6 @@ import org.apache.commons.logging.LogFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.annotation.Order;
 
 import io.onceonly.annotation.I18nCfg;
 import io.onceonly.annotation.I18nCfgBrief;
@@ -24,8 +23,8 @@ import io.onceonly.util.AnnotationScanner;
 import io.onceonly.util.OOReflectUtil;
 import io.onceonly.util.OOUtils;
 
-// TODO @Component
-@Order(1)
+
+
 public class StartupRunner implements CommandLineRunner {
 	private static final Log logger = LogFactory.getLog(StartupRunner.class);
     @Autowired

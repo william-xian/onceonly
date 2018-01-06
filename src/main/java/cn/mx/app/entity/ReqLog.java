@@ -5,7 +5,7 @@ import io.onceonly.db.annotation.Tbl;
 import io.onceonly.db.tbl.OOEntity;
 
 @Tbl
-public class ReqLog extends OOEntity<Long>{
+public class ReqLog extends OOEntity{
 	@Col(size = 255,nullable = true)
 	private String curUser;
 	@Col(size = 8,colDef="varchar(8) default ''",nullable = false)

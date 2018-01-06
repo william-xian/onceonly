@@ -4,7 +4,7 @@ import io.onceonly.db.annotation.Col;
 import io.onceonly.db.annotation.Tbl;
 
 @Tbl
-public final class OODDMeta extends OOEntity<Long>{
+public final class OODDMeta extends OOEntity{
 	@Col(size=32,nullable=true)
 	private String tag;
 	@Col(nullable=true,colDef="TEXT")

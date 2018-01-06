@@ -10,8 +10,8 @@ import org.springframework.context.annotation.ComponentScan;
 
 @SpringBootApplication
 @EnableAutoConfiguration
-@ComponentScan(basePackages = {"io.onceonly.beans","cn.mx.app"})
-@EntityScan({"io.onceonly.beans","cn.mx.app"})
+@ComponentScan(basePackages = {"cn.mx.app"})
+@EntityScan({"cn.mx.app"})
 @ServletComponentScan
 public class Launcher {
 
@@ -22,4 +22,5 @@ public class Launcher {
 		CAC = SpringApplication.run(Launcher.class, args);
 		System.out.println(String.join(", ", CAC.getBeanDefinitionNames()));
 	}
+	
 }

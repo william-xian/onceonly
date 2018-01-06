@@ -55,24 +55,24 @@ public class DaoHelperTest extends DaoBaseTest{
 		UserChief db = daoHelper.get(UserChief.class, uc.getId());
 		
 		Assert.assertEquals(db.toString(), uc.toString());
-		int deleted1 = daoHelper.delete(UserChief.class, uc.getId());
+		int deleted1 = daoHelper.deleteById(UserChief.class, uc.getId());
 		Assert.assertEquals(0, deleted1);
 		Assert.assertEquals(11, daoHelper.count(UserChief.class));
 		/** 
 		 * 
 		 */
-		int removed1 = daoHelper.remove(UserChief.class, uc.getId());
+		int removed1 = daoHelper.removeById(UserChief.class, uc.getId());
 		Assert.assertEquals(1, removed1);
-		int deleteRemoved1 = daoHelper.delete(UserChief.class, uc.getId());
+		int deleteRemoved1 = daoHelper.deleteById(UserChief.class, uc.getId());
 		Assert.assertEquals(1, deleteRemoved1);
 		Assert.assertEquals(10, daoHelper.count(UserChief.class));
 
-		int deleted10 = daoHelper.delete(UserChief.class, ids);
+		int deleted10 = daoHelper.deleteByIds(UserChief.class, ids);
 		Assert.assertEquals(0, deleted10);
 
-		int deleteRemoved10 = daoHelper.remove(UserChief.class, ids);
+		int deleteRemoved10 = daoHelper.removeByIds(UserChief.class, ids);
 		Assert.assertEquals(10, deleteRemoved10);
-		int deletedRemoved10 = daoHelper.delete(UserChief.class, ids);
+		int deletedRemoved10 = daoHelper.deleteByIds(UserChief.class, ids);
 		Assert.assertEquals(10, deletedRemoved10);
 		Assert.assertEquals(0, daoHelper.count(UserChief.class));
 	}
@@ -112,8 +112,8 @@ public class DaoHelperTest extends DaoBaseTest{
 		UserChief db3 = daoHelper.get(UserChief.class, uc3.getId());
 		uc3.setRm(false);
 		Assert.assertEquals(uc3.toString(), db3.toString());
-		daoHelper.remove(UserChief.class, ids);
-		daoHelper.delete(UserChief.class, ids);
+		daoHelper.removeByIds(UserChief.class, ids);
+		daoHelper.deleteByIds(UserChief.class, ids);
 	}
 	@Test
 	public void updateByTpl() {
@@ -141,8 +141,8 @@ public class DaoHelperTest extends DaoBaseTest{
 		UserChief db2 = daoHelper.get(UserChief.class, uc2.getId());
 		uc2.setRm(false);
 		Assert.assertEquals(uc2.toString(),db2.toString());
-		daoHelper.remove(UserChief.class, ids);
-		daoHelper.delete(UserChief.class, ids);
+		daoHelper.removeByIds(UserChief.class, ids);
+		daoHelper.deleteByIds(UserChief.class, ids);
 	}
 	
 	@Test
@@ -176,8 +176,8 @@ public class DaoHelperTest extends DaoBaseTest{
 		Page<UserChief> page1 = daoHelper.find(UserChief.class, cnd4);
 		Assert.assertEquals(2,page1.getData().size());
 		Assert.assertEquals(6,page1.getTotal().longValue());
-		daoHelper.remove(UserChief.class, ids);
-		daoHelper.delete(UserChief.class, ids);
+		daoHelper.removeByIds(UserChief.class, ids);
+		daoHelper.deleteByIds(UserChief.class, ids);
 		
 	}
 	
@@ -226,7 +226,7 @@ public class DaoHelperTest extends DaoBaseTest{
 		UserChief ucAvg = daoHelper.fetch(UserChief.class,avg,null);
 		System.out.println(ucAvg);
 		
-		daoHelper.remove(UserChief.class, ids);
-		daoHelper.delete(UserChief.class, ids);
+		daoHelper.removeByIds(UserChief.class, ids);
+		daoHelper.deleteByIds(UserChief.class, ids);
 	}
 }
